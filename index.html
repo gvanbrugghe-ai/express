@@ -29,7 +29,16 @@ input{font:inherit;color:inherit}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* Barre d'annonce et header */
-.topbar{background:var(--ink);color:#fff;font-size:12.5px;text-align:center;padding:8px 16px}
+.topbar{background:var(--ink);color:#fff;font-size:12.5px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:6px 32px}
+.ann{grid-column:2;text-align:center;padding:2px 0}
+.lang{grid-column:3;justify-self:end;display:flex;align-items:center;gap:2px;font-size:12px;letter-spacing:.04em}
+.lang button{padding:3px 6px;border-radius:2px;color:rgba(255,255,255,.6);font-weight:500}
+.lang button:hover{color:#fff}
+.lang button[aria-pressed="true"]{color:#fff;font-weight:600;text-decoration:underline;text-underline-offset:4px}
+.lang .sep{opacity:.35}
+.co-r{display:flex;align-items:center;gap:18px}
+.co-hdr .lang button{color:var(--muted)}
+.co-hdr .lang button:hover,.co-hdr .lang button[aria-pressed="true"]{color:var(--ink)}
 .hdr{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:#fff;border-bottom:1px solid var(--line)}
 .hdr-in{max-width:1320px;margin:0 auto;padding:0 32px;height:72px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px}
 .hdr-l{display:flex;align-items:center;gap:6px;min-width:0}
@@ -332,6 +341,10 @@ input{font:inherit;color:inherit}
   .ftr-in{grid-template-columns:1fr 1fr;padding:28px 16px}
   .ftr-bt{padding:16px 16px 88px}
   .conf{padding:32px 16px 72px}
+  .topbar{grid-template-columns:1fr auto;padding:6px 12px 6px 16px}
+  .ann{grid-column:1;text-align:left}
+  .lang{grid-column:2}
+  .co-hdr .secure{display:none}
 }
 @media (max-width:520px){
   .grid2{grid-template-columns:1fr}
@@ -513,6 +526,27 @@ input{font:inherit;color:inherit}
   "cp": "75015",
   "phone": "06 12 34 56 78",
   "email": "camille.martin@exemple.fr"
+ },
+ "en": {
+  "site": {
+   "announcement": "Free delivery over €49 and free returns in store",
+   "nav": [
+    "New in",
+    "Women",
+    "Men",
+    "Jeans",
+    "Accessories",
+    "Deals"
+   ]
+  },
+  "product": {
+   "name": "Ribbed-knit crew-neck jumper",
+   "colour": "Black",
+   "department": "Men",
+   "category": "Jumpers and cardigans",
+   "description": "Crew-neck jumper in a chunky ribbed knit, with a straight fit and ribbed trims at the neckline, cuffs and hem.",
+   "composition": "100% cotton knit. Machine wash at 30°C, dry flat."
+  }
  }
 }
 </script>
@@ -535,15 +569,156 @@ function buildDoc(c) {
   return '<!DOCTYPE html>\n<html lang="fr">\n<head>\n' + HEAD + '<style id="css">' + SRC.css + '</style>\n</head>\n<body>\n<div id="app"></div>\n<div id="chrome"></div>\n<script type="application/json" id="cfg">\n' + json + '\n<\/script>\n<script id="main">' + SRC.main + '<\/script>\n</body>\n</html>\n';
 }
 
+/* ---------- Langue ---------- */
+const LANG_KEY = 'demo-promesse-lang';
+let LANG = 'fr';
+try {
+  const q = new URLSearchParams(location.search).get('lang');
+  const st = sessionStorage.getItem(LANG_KEY);
+  if (q === 'en' || q === 'fr') LANG = q; else if (st === 'en' || st === 'fr') LANG = st;
+} catch (e) { /* langue par défaut */ }
+const EN = () => LANG === 'en';
+
+const L = {
+  fr: {
+    home: 'Accueil', crumbs: 'Fil d’Ariane', cats: 'Catégories', menu: 'Menu', langGroup: 'Langue du site',
+    search: 'Rechercher un article', findStore: 'Trouver un magasin', account: 'Mon compte', wish: 'Mes favoris',
+    cartAria: n => 'Panier, ' + n + ' article' + (n > 1 ? 's' : ''),
+    ref: 'Réf.', colourLbl: 'Couleur&nbsp;:', size: 'Taille', sizeGuide: 'Guide des tailles',
+    inStock: 'En stock', low: n => 'Plus que ' + n + ' pièce' + (n > 1 ? 's' : '') + ' disponible' + (n > 1 ? 's' : ''), soldOut: 'Taille épuisée',
+    add: 'Ajouter au panier', photo: 'Photo produit', changePhoto: 'Changer la photo',
+    pTitle: 'Livraison et retrait', pTitleCart: 'Livraison et retrait de votre panier',
+    hint: 'Où souhaitez-vous être livré ou retirer votre article&#8239;?',
+    cpLabel: 'Code postal', cpPh: 'Code postal, par exemple 75015', cpBtn: 'Valider', deliverTo: 'Livraison à', change: 'Modifier',
+    cpErr: 'Saisissez un code postal français à 5 chiffres, par exemple 75015.',
+    accDesc: 'Description', accComp: 'Composition et entretien', accShip: 'Livraison et retours',
+    shipText: f => 'Livraison en 2h dans les villes où nous avons un magasin, retrait gratuit en magasin, livraison à domicile ou en point relais offerte dès ' + f + '. Retours gratuits sous 30 jours en magasin ou en point relais.',
+    t2h: 'Livraison express en 2h', tcc: 'Retrait en magasin', texpress: 'Livraison express à domicile', thome: 'Livraison à domicile', trelay: 'Livraison en point relais',
+    co2: 'Moins de CO₂', tbc: 'À confirmer', unavailable: 'Non disponible', byCp: 'Selon votre code postal', ccPending: 'Indiquez votre code postal pour voir les magasins',
+    orderWithin: d => 'Commandez dans ' + d, orderBefore: h => 'Commandez avant ' + h,
+    prep2h: s => 'Préparé au magasin ' + s + ', livré par coursier',
+    between: (d, a, b) => d + ' entre ' + a + ' et ' + b, from: (d, h) => d + ' dès ' + h, fromDay: d => 'Dès le ' + d, before: (d, h) => d + ' avant ' + h,
+    ccAt: (s, km, n) => 'Au magasin ' + s + ', à ' + km + (n != null ? ', ' + n + ' en stock' : ''), ccTransfer: s => 'Au magasin ' + s + ', envoyé depuis notre entrepôt',
+    mainland: 'En France métropolitaine', freeOver: f => 'Offerte dès ' + f, free: 'Gratuit', offered: 'Offerte',
+    rOm: 'Non disponible en outre-mer', rNoStore2h: cp => 'Pas de magasin assez proche de ' + cp, rNoStore: cp => 'Aucun magasin à proximité de ' + cp,
+    rCorse: 'Non disponible en Corse', rStock: 'Stock insuffisant pour cette quantité', rSize: z => 'Taille ' + z + ' indisponible dans les magasins proches', rSplit: 'Articles disponibles dans des magasins différents',
+    today: 'Aujourd’hui', tomorrow: 'Demain',
+    added: 'Ajouté au panier', close: 'Fermer', qty: n => 'Quantité&nbsp;: ' + n, colourSize: (c, z) => c + ', taille ' + z, forCp: s => 'Pour ' + s,
+    miniNoCp: 'Indiquez votre code postal dans le panier pour voir les délais de livraison et de retrait.', viewCart: n => 'Voir mon panier (' + n + ')', keepShopping: 'Continuer mes achats',
+    myCart: 'Mon panier', items: n => n + ' article' + (n > 1 ? 's' : ''), emptyCart: 'Votre panier est vide.', backItem: 'Retour à l’article',
+    colourLine: (c, z) => 'Couleur&nbsp;: ' + c + ', taille ' + z, minus: 'Retirer un article', plus: 'Ajouter un article', remove: 'Supprimer',
+    summary: 'Récapitulatif', subtotal: 'Sous-total', delivery: 'Livraison', freeHome: 'Offerte à domicile', nextStep: 'Calculée à l’étape suivante', total: 'Total',
+    checkout: 'Valider mon panier', payMeans: 'Carte bancaire, PayPal ou Apple Pay',
+    stCart: 'Panier', stDel: 'Livraison et paiement', stConf: 'Confirmation', secure: 'Paiement sécurisé', backCart: 'Retour au panier',
+    secAddr: 'Adresse de livraison', fFirst: 'Prénom', fLast: 'Nom', fStreet: 'Adresse', fExtra: 'Complément d’adresse (facultatif)', fCp: 'Code postal', fCity: 'Ville', fPhone: 'Téléphone mobile', fEmail: 'E-mail',
+    secMode: 'Mode de livraison', modeNoCp: 'Saisissez votre code postal pour afficher les modes de livraison disponibles.',
+    chooseSlot: d => 'Choisissez votre créneau, ' + d, byCourier: a => 'Livré par coursier au ' + a + '.', fillAddr: 'Renseignez votre adresse ci-dessus.',
+    chooseStore: 'Choisissez votre magasin', sentFromWh: ', envoyé depuis notre entrepôt', notInSize: 'Indisponible dans votre taille',
+    chooseRelay: 'Choisissez votre point relais', openUntil: h => 'Ouvert jusqu’à ' + h, deliveredTo: a => 'Livré au ' + a + '.',
+    parcels: (n, list) => 'Livré en ' + n + ' colis&nbsp;: ' + list + '.', parcelItem: (z, src) => 'taille ' + z + ' depuis ' + src, wh: 'notre entrepôt', storeSrc: s => 'le magasin ' + s, and: ' et ',
+    secPay: 'Paiement', payGroup: 'Moyen de paiement', card: 'Carte bancaire', demoPay: 'Démonstration&nbsp;: aucun paiement n’est effectué.',
+    yourOrder: 'Votre commande', sizeQty: (z, n) => 'Taille ' + z + ', quantité ' + n, totalTtc: 'Total TTC', pay: p => 'Payer ' + p,
+    checkFields: 'Vérifiez les champs signalés pour finaliser la commande.', storePlace: (s, a) => 'Magasin ' + s + ', ' + a,
+    errReq: 'Champ obligatoire', errEmail: 'Adresse e-mail invalide', errCp: 'Code postal à 5 chiffres', errStreet: 'Indiquez votre adresse', errCity: 'Indiquez votre ville', errMode: 'Aucun mode de livraison n’est disponible pour cette adresse.',
+    thanks: n => 'Merci ' + n + ', votre commande est confirmée', orderLead: (no, em) => 'Commande n° ' + no + '. Un e-mail de confirmation a été envoyé à ' + em + '.',
+    noOrder: 'Aucune commande en cours.', totalPaid: 'Total payé', delivAria: 'Livraison', itemsAria: 'Articles',
+    s1: 'Commande confirmée', s1s: h => 'Aujourd’hui à ' + h, sPrepStore: 'Préparation en magasin', storeName: s => 'Magasin ' + s,
+    sCourier: 'Remise au coursier', sSms: 'Vous recevez un SMS de suivi', sDel: 'Livraison', sToStore: 'Envoi vers le magasin', sFromWh: 'Depuis notre entrepôt',
+    sReady: 'Prête à retirer', sReadyS: w => w + ', vous recevez un SMS', sCollect: 'Retrait', sCollectS: 'Sur présentation de l’e-mail de confirmation',
+    sPrep: 'Préparation', sPrepS: s => 'Depuis ' + s, sShip: 'Expédition', sShipS: 'Vous recevez un e-mail de suivi',
+    r1: 'Livraison en 2h dans les grandes villes', r2: 'Retrait gratuit en magasin', r3: 'Retours gratuits sous 30 jours', r4: 'Paiement sécurisé',
+    help: 'Besoin d’aide', helpL: ['Suivre ma commande', 'Livraison et retrait', 'Retours et échanges', 'Nous contacter'],
+    stores: 'Nos magasins', storesL: ['Trouver un magasin', 'Retrait en magasin', 'Carte cadeau'],
+    about: 'À propos', aboutL: ['Nos engagements', 'Recrutement', 'Mentions légales'],
+    nlTitle: 'Newsletter', nlText: 'Les nouveautés et les ventes privées en avant-première.', nlPh: 'Votre e-mail', nlBtn: 'S’inscrire',
+    legal: (y, l) => '© ' + y + ' ' + l + '. Démonstration de promesse de livraison, données fictives.',
+    demo: h => 'Démo ' + h, realTime: 'Heure réelle', realTimeNext: 'l’heure réelle',
+    clockTip: n => 'Heure simulée pour la démonstration. Cliquer pour passer à ' + n + '.', clockAria: l => l + '. Cliquer pour changer l’heure de démonstration.',
+    editPage: 'Modifier la page', editRegion: 'Mode édition', editMode: 'Mode édition.',
+    editHelp: p => ' Cliquez sur un texte encadré pour le modifier, sur toutes les pages du parcours' + (p ? ', et sur la photo pour la changer' : '') + '. Les textes produit et le menu se modifient séparément en français et en anglais.',
+    cancel: 'Annuler', save: 'Enregistrer', saving: 'Enregistrement…',
+    mSaved: 'Enregistré. La page se recharge.', mConflict: 'Une version plus récente vient d’être publiée : la page se recharge.', mReadOnly: 'Cette page est en lecture seule pour vous.',
+    mTooLarge: 'La page est trop lourde pour être enregistrée.', mRate: 'Trop d’enregistrements rapprochés. Réessayez dans un instant.', mFail: 'L’enregistrement a échoué. Réessayez.',
+    mUploading: 'Envoi de la photo…', mPhotoOk: 'Photo remplacée. Pensez à enregistrer.', mPhotoBig: 'Photo trop lourde (20 Mo maximum).',
+    mPhotoType: 'Format non pris en charge : utilisez JPG, PNG ou WebP.', mPhotoFail: 'L’envoi de la photo a échoué.', item: 'Article'
+  },
+  en: {
+    home: 'Home', crumbs: 'Breadcrumb', cats: 'Categories', menu: 'Menu', langGroup: 'Site language',
+    search: 'Search for an item', findStore: 'Find a store', account: 'My account', wish: 'My wishlist',
+    cartAria: n => 'Basket, ' + n + ' item' + (n > 1 ? 's' : ''),
+    ref: 'Ref.', colourLbl: 'Colour:', size: 'Size', sizeGuide: 'Size guide',
+    inStock: 'In stock', low: n => 'Only ' + n + ' left', soldOut: 'Out of stock',
+    add: 'Add to basket', photo: 'Product photo', changePhoto: 'Change photo',
+    pTitle: 'Delivery and collection', pTitleCart: 'Delivery and collection for your basket',
+    hint: 'Where would you like your item delivered or collected?',
+    cpLabel: 'Postcode', cpPh: 'Postcode, e.g. 75015', cpBtn: 'Confirm', deliverTo: 'Delivering to', change: 'Change',
+    cpErr: 'Enter a 5-digit French postcode, e.g. 75015.',
+    accDesc: 'Description', accComp: 'Composition and care', accShip: 'Delivery and returns',
+    shipText: f => '2-hour delivery in cities where we have a store, free click & collect, and free home or collection point delivery over ' + f + '. Free returns within 30 days in store or at a collection point.',
+    t2h: '2-hour express delivery', tcc: 'Click & collect', texpress: 'Express home delivery', thome: 'Standard home delivery', trelay: 'Collection point delivery',
+    co2: 'Lower CO₂', tbc: 'To be confirmed', unavailable: 'Unavailable', byCp: 'Depends on your postcode', ccPending: 'Enter your postcode to see nearby stores',
+    orderWithin: d => 'Order within ' + d, orderBefore: h => 'Order before ' + h,
+    prep2h: s => 'Prepared at our ' + s + ' store, delivered by courier',
+    between: (d, a, b) => d + ' between ' + a + ' and ' + b, from: (d, h) => d + ' from ' + h, fromDay: d => 'From ' + d, before: (d, h) => d + ' before ' + h,
+    ccAt: (s, km, n) => 'At our ' + s + ' store, ' + km + ' away' + (n != null ? ', ' + n + ' in stock' : ''), ccTransfer: s => 'At our ' + s + ' store, sent from our warehouse',
+    mainland: 'Mainland France', freeOver: f => 'Free over ' + f, free: 'Free', offered: 'Free',
+    rOm: 'Not available in the French overseas territories', rNoStore2h: cp => 'No store close enough to ' + cp, rNoStore: cp => 'No store near ' + cp,
+    rCorse: 'Not available in Corsica', rStock: 'Not enough stock for this quantity', rSize: z => 'Size ' + z + ' unavailable in nearby stores', rSplit: 'Items are held in different stores',
+    today: 'Today', tomorrow: 'Tomorrow',
+    added: 'Added to your basket', close: 'Close', qty: n => 'Quantity: ' + n, colourSize: (c, z) => c + ', size ' + z, forCp: s => 'For ' + s,
+    miniNoCp: 'Enter your postcode in the basket to see delivery and collection times.', viewCart: n => 'View basket (' + n + ')', keepShopping: 'Continue shopping',
+    myCart: 'My basket', items: n => n + ' item' + (n > 1 ? 's' : ''), emptyCart: 'Your basket is empty.', backItem: 'Back to the item',
+    colourLine: (c, z) => 'Colour: ' + c + ', size ' + z, minus: 'Remove one', plus: 'Add one', remove: 'Remove',
+    summary: 'Order summary', subtotal: 'Subtotal', delivery: 'Delivery', freeHome: 'Free home delivery', nextStep: 'Calculated at the next step', total: 'Total',
+    checkout: 'Go to checkout', payMeans: 'Card, PayPal or Apple Pay',
+    stCart: 'Basket', stDel: 'Delivery and payment', stConf: 'Confirmation', secure: 'Secure payment', backCart: 'Back to basket',
+    secAddr: 'Delivery address', fFirst: 'First name', fLast: 'Last name', fStreet: 'Address', fExtra: 'Address line 2 (optional)', fCp: 'Postcode', fCity: 'City', fPhone: 'Mobile number', fEmail: 'Email',
+    secMode: 'Delivery method', modeNoCp: 'Enter your postcode to see the available delivery methods.',
+    chooseSlot: d => 'Choose your time slot, ' + d, byCourier: a => 'Delivered by courier to ' + a + '.', fillAddr: 'Enter your address above.',
+    chooseStore: 'Choose your store', sentFromWh: ', sent from our warehouse', notInSize: 'Not available in your size',
+    chooseRelay: 'Choose your collection point', openUntil: h => 'Open until ' + h, deliveredTo: a => 'Delivered to ' + a + '.',
+    parcels: (n, list) => 'Delivered in ' + n + ' parcels: ' + list + '.', parcelItem: (z, src) => 'size ' + z + ' from ' + src, wh: 'our warehouse', storeSrc: s => 'our ' + s + ' store', and: ' and ',
+    secPay: 'Payment', payGroup: 'Payment method', card: 'Card', demoPay: 'Demo: no payment is taken.',
+    yourOrder: 'Your order', sizeQty: (z, n) => 'Size ' + z + ', quantity ' + n, totalTtc: 'Total (incl. VAT)', pay: p => 'Pay ' + p,
+    checkFields: 'Check the highlighted fields to complete your order.', storePlace: (s, a) => s + ' store, ' + a,
+    errReq: 'Required', errEmail: 'Invalid email address', errCp: '5-digit postcode', errStreet: 'Enter your address', errCity: 'Enter your city', errMode: 'No delivery method is available for this address.',
+    thanks: n => 'Thank you ' + n + ', your order is confirmed', orderLead: (no, em) => 'Order no. ' + no + '. A confirmation email has been sent to ' + em + '.',
+    noOrder: 'No order in progress.', totalPaid: 'Total paid', delivAria: 'Delivery', itemsAria: 'Items',
+    s1: 'Order confirmed', s1s: h => 'Today at ' + h, sPrepStore: 'Being prepared in store', storeName: s => s + ' store',
+    sCourier: 'Handed to the courier', sSms: 'You’ll receive a tracking text', sDel: 'Delivery', sToStore: 'On its way to the store', sFromWh: 'From our warehouse',
+    sReady: 'Ready to collect', sReadyS: w => w + ', we’ll text you', sCollect: 'Collection', sCollectS: 'Show your confirmation email in store',
+    sPrep: 'Preparation', sPrepS: s => 'From ' + s, sShip: 'Dispatch', sShipS: 'You’ll receive a tracking email',
+    r1: '2-hour delivery in major cities', r2: 'Free click & collect', r3: 'Free returns within 30 days', r4: 'Secure payment',
+    help: 'Need help?', helpL: ['Track my order', 'Delivery and collection', 'Returns and exchanges', 'Contact us'],
+    stores: 'Our stores', storesL: ['Find a store', 'Click & collect', 'Gift card'],
+    about: 'About us', aboutL: ['Our commitments', 'Careers', 'Legal notice'],
+    nlTitle: 'Newsletter', nlText: 'Be the first to hear about new arrivals and private sales.', nlPh: 'Your email', nlBtn: 'Sign up',
+    legal: (y, l) => '© ' + y + ' ' + l + '. Delivery promise demo, fictitious data.',
+    demo: h => 'Demo ' + h, realTime: 'Real time', realTimeNext: 'real time',
+    clockTip: n => 'Simulated time for the demo. Click to switch to ' + n + '.', clockAria: l => l + '. Click to change the demo time.',
+    editPage: 'Edit page', editRegion: 'Edit mode', editMode: 'Edit mode.',
+    editHelp: p => ' Click any outlined text to change it, on every page of the journey' + (p ? ', or click the photo to replace it' : '') + '. Product copy and menu are edited separately in French and English.',
+    cancel: 'Cancel', save: 'Save', saving: 'Saving…',
+    mSaved: 'Saved. The page is reloading.', mConflict: 'A newer version has just been published: the page is reloading.', mReadOnly: 'This page is read-only for you.',
+    mTooLarge: 'The page is too large to save.', mRate: 'Too many saves in a row. Try again in a moment.', mFail: 'Saving failed. Try again.',
+    mUploading: 'Uploading photo…', mPhotoOk: 'Photo replaced. Remember to save.', mPhotoBig: 'Photo too large (20 MB maximum).',
+    mPhotoType: 'Unsupported format: use JPG, PNG or WebP.', mPhotoFail: 'The photo upload failed.', item: 'Item'
+  }
+};
+const tr = (k, ...a) => { const d = L[LANG]; const v = (k in d) ? d[k] : L.fr[k]; return typeof v === 'function' ? v(...a) : (v == null ? k : v); };
+
 /* ---------- Utilitaires ---------- */
 const NB = '\u202f';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const getPath = (o, p) => p.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
 function setPath(o, p, v) { const ks = p.split('.'); let a = o; for (let i = 0; i < ks.length - 1; i++) { a = a[ks[i]]; if (a == null) return; } a[ks[ks.length - 1]] = v; }
 const r2 = n => Math.round(n * 100) / 100;
-const fmtNum = n => { n = r2(+n || 0); return Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ','); };
-const eur = n => fmtNum(n) + NB + '€';
+const fmtNum = n => { n = r2(+n || 0); const s = Number.isInteger(n) ? String(n) : n.toFixed(2); return EN() ? s : s.replace('.', ','); };
+const eur = n => EN() ? '€' + fmtNum(n) : fmtNum(n) + NB + '€';
 const pad = n => String(n).padStart(2, '0');
+/* Chemin du texte dans la langue affichée (les textes produit et le menu ont une version anglaise) */
+const lp = path => (EN() && getPath(cfg, 'en.' + path) !== undefined) ? 'en.' + path : path;
+const txt = path => getPath(cfg, lp(path));
 
 /* ---------- Icônes ---------- */
 const I = {
@@ -570,7 +745,7 @@ const I = {
   image: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>'
 };
 const ic = k => '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + I[k] + '</svg>';
-const CO2 = '<span class="co2">' + ic('leaf') + 'Moins de CO₂</span>';
+const co2Html = () => '<span class="co2">' + ic('leaf') + tr('co2') + '</span>';
 
 /* ---------- Horloge de démo ---------- */
 const PRESETS = ['10:00', '13:00', '17:30', '19:30', 'now'];
@@ -594,11 +769,11 @@ function now() {
   d.setHours(h, m, 0, 0);
   return d;
 }
-const clockLabel = () => { const p = customTime || PRESETS[clockIdx]; return p === 'now' ? 'Heure réelle' : 'Démo ' + p; };
+const clockLabel = () => { const p = customTime || PRESETS[clockIdx]; return p === 'now' ? tr('realTime') : tr('demo', p); };
 
 /* ---------- Calendrier ---------- */
-const WD = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
-const MO = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const WD = { fr: ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
+const MO = { fr: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
 const FIXED_HOL = ['01-01', '05-01', '05-08', '07-14', '08-15', '11-01', '11-11', '12-25'];
 const MOVE_HOL = ['2026-04-06', '2026-05-14', '2026-05-25', '2027-03-29', '2027-05-06', '2027-05-17', '2028-04-17', '2028-05-25', '2028-06-05'];
 const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -614,16 +789,27 @@ const hours = t => t.getHours() + t.getMinutes() / 60;
 function shipDay(t, cutoffH) { const today = startOfDay(t); return (isWorkday(today) && hours(t) < cutoffH) ? today : nextDay(today, isWorkday); }
 const sameDay = (a, b) => ymd(a) === ymd(b);
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-const dnum = d => d.getDate() === 1 ? '1er' : String(d.getDate());
-const dayShort = d => WD[d.getDay()] + ' ' + dnum(d) + ' ' + MO[d.getMonth()];
-function dayWord(d, t) { if (sameDay(d, t)) return 'Aujourd’hui'; if (sameDay(d, addDays(t, 1))) return 'Demain'; return cap(dayShort(d)); }
+const dnum = d => (!EN() && d.getDate() === 1) ? '1er' : String(d.getDate());
+const wd = d => WD[LANG][d.getDay()], mo = d => MO[LANG][d.getMonth()];
+const dayShort = d => wd(d) + ' ' + dnum(d) + ' ' + mo(d);
+function dayWord(d, t) { if (sameDay(d, t)) return tr('today'); if (sameDay(d, addDays(t, 1))) return tr('tomorrow'); return cap(dayShort(d)); }
+function dayWordInline(d, t) { const w = dayWord(d, t); if (sameDay(d, t) || sameDay(d, addDays(t, 1))) return w.toLowerCase(); return EN() ? w : w.toLowerCase(); }
 function range(a, b) {
   if (sameDay(a, b)) return cap(dayShort(a));
-  if (a.getMonth() === b.getMonth()) return cap(WD[a.getDay()] + ' ' + dnum(a) + ' – ' + WD[b.getDay()] + ' ' + dnum(b) + ' ' + MO[b.getMonth()]);
+  if (a.getMonth() === b.getMonth()) return cap(wd(a) + ' ' + dnum(a) + ' – ' + wd(b) + ' ' + dnum(b) + ' ' + mo(b));
   return cap(dayShort(a) + ' – ' + dayShort(b));
 }
-const fmtH = h => { const H = Math.floor(h), M = Math.round((h - H) * 60); return M ? H + 'h' + pad(M) : H + 'h'; };
-function dur(mins) { mins = Math.max(1, Math.round(mins)); const h = Math.floor(mins / 60), m = mins % 60; return h ? (m ? h + NB + 'h' + NB + pad(m) : h + NB + 'h') : m + NB + 'min'; }
+const fmtH = h => {
+  const H = Math.floor(h), M = Math.round((h - H) * 60);
+  if (!EN()) return M ? H + 'h' + pad(M) : H + 'h';
+  return (H % 12 === 0 ? 12 : H % 12) + (M ? ':' + pad(M) : '') + (H < 12 ? 'am' : 'pm');
+};
+function dur(mins) {
+  mins = Math.max(1, Math.round(mins));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  if (EN()) return h ? (m ? h + NB + 'hr ' + m + NB + 'min' : h + NB + 'hr') : m + NB + 'min';
+  return h ? (m ? h + NB + 'h' + NB + pad(m) : h + NB + 'h') : m + NB + 'min';
+}
 
 /* ---------- Géographie ---------- */
 function validCp(cp) { if (!/^\d{5}$/.test(cp || '')) return false; const d = +cp.slice(0, 2); return (d >= 1 && d <= 95) || d === 97 || d === 98; }
@@ -637,18 +823,18 @@ function cityOf(cp) {
 function hashStr(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); }
 function kmTo(s, cp) { if (s.cp === cp) return 0.6; if (s.cp.slice(0, 2) === cp.slice(0, 2)) return 1.8 + (hashStr(s.id + cp) % 20) / 10; return 6 + (hashStr(s.id + cp) % 60) / 10; }
 function nearby(cp) { const d = cp.slice(0, 2); return cfg.stores.filter(s => (s.zone || []).includes(d)).map(s => ({ s, km: kmTo(s, cp) })).sort((a, b) => a.km - b.km); }
-const fmtKm = k => k.toFixed(1).replace('.', ',') + NB + 'km';
+const fmtKm = k => (EN() ? k.toFixed(1) : k.toFixed(1).replace('.', ',')) + NB + 'km';
 function relays(cp, city) {
   const c = city || cityOf(cp) || '';
   if (cp === '75015') return [
-    { name: 'Relais Lecourbe', address: '98 rue Lecourbe, 75015 Paris', km: 0.3, hours: 'Ouvert jusqu’à 19h30' },
-    { name: 'Tabac de la Convention', address: '141 rue de la Convention, 75015 Paris', km: 0.7, hours: 'Ouvert jusqu’à 20h' },
-    { name: 'Librairie Vaugirard', address: '302 rue de Vaugirard, 75015 Paris', km: 1.1, hours: 'Ouvert jusqu’à 19h' }
+    { name: 'Relais Lecourbe', address: '98 rue Lecourbe, 75015 Paris', km: 0.3, until: 19.5 },
+    { name: 'Tabac de la Convention', address: '141 rue de la Convention, 75015 Paris', km: 0.7, until: 20 },
+    { name: 'Librairie Vaugirard', address: '302 rue de Vaugirard, 75015 Paris', km: 1.1, until: 19 }
   ];
   return [
-    { name: 'Relais Centre-ville', address: ('5 place de la Mairie, ' + cp + ' ' + c).trim(), km: 0.5, hours: 'Ouvert jusqu’à 19h' },
-    { name: 'Tabac Presse de la Gare', address: ('12 avenue de la Gare, ' + cp + ' ' + c).trim(), km: 0.9, hours: 'Ouvert jusqu’à 20h' },
-    { name: 'Supérette du Marché', address: ('28 rue du Marché, ' + cp + ' ' + c).trim(), km: 1.4, hours: 'Ouvert jusqu’à 21h' }
+    { name: 'Relais Centre-ville', address: ('5 place de la Mairie, ' + cp + ' ' + c).trim(), km: 0.5, until: 19 },
+    { name: 'Tabac Presse de la Gare', address: ('12 avenue de la Gare, ' + cp + ' ' + c).trim(), km: 0.9, until: 20 },
+    { name: 'Supérette du Marché', address: ('28 rue du Marché, ' + cp + ' ' + c).trim(), km: 1.4, until: 21 }
   ];
 }
 
@@ -671,11 +857,11 @@ function parcels(lines, cp) {
   }
   return groups;
 }
-const srcLabel = src => src === 'wh' ? 'notre entrepôt' : 'le magasin ' + src.name;
+const srcLabel = src => src === 'wh' ? tr('wh') : tr('storeSrc', src.name);
 function missingReason(lines, near) {
   const miss = lines.filter(l => !near.some(n => stS(n.s, l.size) >= l.qty));
-  if (miss.length) return 'Taille ' + miss.map(l => l.size).join(', ') + ' indisponible dans les magasins proches';
-  return 'Articles disponibles dans des magasins différents';
+  if (miss.length) return tr('rSize', esc(miss.map(l => l.size).join(', ')));
+  return tr('rSplit');
 }
 
 /* ---------- Moteur de promesse ---------- */
@@ -694,7 +880,14 @@ function ccReady(t) {
   return { day: nextDay(today, isStoreDay), h: 11 };
 }
 const ccTransfer = t => ({ day: addN(shipDay(t, 14), 3, isStoreDay), h: 14 });
-function readyLabel(x, t) { if (x.transfer) return 'Dès le ' + dayShort(x.ready.day); return dayWord(x.ready.day, t) + ' dès ' + fmtH(x.ready.h); }
+function readyLabel(x, t) { return x.transfer ? tr('fromDay', dayShort(x.ready.day)) : tr('from', dayWord(x.ready.day, t), fmtH(x.ready.h)); }
+/* Libellé de délai, recalculé dans la langue affichée ; sel = choix du checkout (créneau, magasin) */
+function whenOf(o, t, sel) {
+  if (o.id === '2h') { const s = sel && sel.slot != null ? sel.slot : o.slots[0].start; return tr('between', dayWord(o.day, t), fmtH(s), fmtH(s + 2)); }
+  if (o.id === 'cc') { const x = (sel && sel.storeId && o.stores.find(y => y.s.id === sel.storeId && (y.ok || y.transfer))) || o.pick; return readyLabel(x, t); }
+  if (o.id === 'express') return tr('before', dayWord(o.day, t), fmtH(13));
+  return range(o.day, o.dayTo);
+}
 
 function computePromise(lines, cp, t, subtotal) {
   const has = validCp(cp);
@@ -703,82 +896,81 @@ function computePromise(lines, cp, t, subtotal) {
   const near = has && !om ? nearby(cp) : [];
   const pc = parcels(lines, cp);
   const free = subtotal >= (+cfg.fees.freeFrom || Infinity);
-  const today = startOfDay(t);
-  const tomorrow = addDays(today, 1);
+  const today = startOfDay(t), tomorrow = addDays(today, 1);
+  const freeNote = tr('freeOver', edNum('fees.freeFrom'));
   const out = [];
 
-  const o2 = { id: '2h', icon: 'bolt', title: 'Livraison express en 2h', fee: +cfg.fees.express2h, feePath: 'fees.express2h' };
+  const o2 = { id: '2h', icon: 'bolt', title: tr('t2h'), fee: +cfg.fees.express2h, feePath: 'fees.express2h' };
   if (!has) o2.status = 'pending';
-  else if (om) { o2.status = 'off'; o2.reason = 'Non disponible en outre-mer'; }
-  else if (!near.length) { o2.status = 'off'; o2.reason = 'Pas de magasin assez proche de ' + cp; }
+  else if (om) { o2.status = 'off'; o2.reason = tr('rOm'); }
+  else if (!near.length) { o2.status = 'off'; o2.reason = tr('rNoStore2h', esc(cp)); }
   else {
     const src = near.find(n => hasAll(n.s, lines));
     if (!src) { o2.status = 'off'; o2.reason = missingReason(lines, near); }
     else {
       const sl = slots2h(t);
       Object.assign(o2, { status: 'ok', store: src.s, day: sl.day, slots: sl.slots, fast: true });
-      o2.when = dayWord(sl.day, t) + ' entre ' + fmtH(sl.slots[0].start) + ' et ' + fmtH(sl.slots[0].end);
       if (sl.cutoff) o2.countdown = (sl.cutoff - t) / 60000;
-      o2.subHtml = 'Préparé au magasin ' + edStore(src.s) + ', livré par coursier';
+      o2.subHtml = tr('prep2h', edStore(src.s));
     }
   }
   out.push(o2);
 
-  const oc = { id: 'cc', icon: 'store', title: 'Retrait en magasin', fee: 0, co2: true };
-  if (!has) { oc.status = 'pending'; oc.subHtml = 'Indiquez votre code postal pour voir les magasins'; }
-  else if (!near.length) { oc.status = 'off'; oc.reason = 'Aucun magasin à proximité de ' + cp; }
+  const oc = { id: 'cc', icon: 'store', title: tr('tcc'), fee: 0, co2: true };
+  if (!has) { oc.status = 'pending'; oc.subHtml = tr('ccPending'); }
+  else if (!near.length) { oc.status = 'off'; oc.reason = tr('rNoStore', esc(cp)); }
   else {
     const whOk = lines.every(l => stW(l.size) >= l.qty);
     oc.stores = near.map(n => { const ok = hasAll(n.s, lines); return { s: n.s, km: n.km, ok, transfer: !ok && whOk, ready: ok ? ccReady(t) : (whOk ? ccTransfer(t) : null) }; });
     const best = oc.stores.find(x => x.ok) || oc.stores.find(x => x.transfer);
     if (!best) { oc.status = 'off'; oc.reason = missingReason(lines, near); }
     else {
-      Object.assign(oc, { status: 'ok', store: best.s, pick: best, when: readyLabel(best, t) });
+      Object.assign(oc, { status: 'ok', store: best.s, pick: best });
       oc.fast = !best.transfer && (sameDay(best.ready.day, today) || sameDay(best.ready.day, tomorrow));
-      const stock = best.ok && lines.length === 1 ? ', ' + stS(best.s, lines[0].size) + ' en stock' : '';
-      oc.subHtml = best.transfer ? 'Au magasin ' + edStore(best.s) + ', envoyé depuis notre entrepôt' : 'Au magasin ' + edStore(best.s) + ', à ' + fmtKm(best.km) + stock;
+      const n = best.ok && lines.length === 1 ? stS(best.s, lines[0].size) : null;
+      oc.subHtml = best.transfer ? tr('ccTransfer', edStore(best.s)) : tr('ccAt', edStore(best.s), fmtKm(best.km), n);
     }
   }
   out.push(oc);
 
-  const oe = { id: 'express', icon: 'truck', title: 'Livraison express à domicile', fee: +cfg.fees.express, feePath: 'fees.express' };
+  const oe = { id: 'express', icon: 'truck', title: tr('texpress'), fee: +cfg.fees.express, feePath: 'fees.express' };
   if (!has) oe.status = 'pending';
-  else if (corse || om) { oe.status = 'off'; oe.reason = corse ? 'Non disponible en Corse' : 'Non disponible en outre-mer'; }
-  else if (!pc) { oe.status = 'off'; oe.reason = 'Stock insuffisant pour cette quantité'; }
+  else if (corse || om) { oe.status = 'off'; oe.reason = corse ? tr('rCorse') : tr('rOm'); }
+  else if (!pc) { oe.status = 'off'; oe.reason = tr('rStock'); }
   else {
     const sd = shipDay(t, 15), dd = addN(sd, 1, isDelivDay);
-    Object.assign(oe, { status: 'ok', day: dd, when: dayWord(dd, t) + ' avant 13h', fast: sameDay(dd, tomorrow) || sameDay(dd, today), parcels: pc });
-    if (sameDay(sd, today)) oe.subHtml = 'Commandez avant 15h';
+    Object.assign(oe, { status: 'ok', day: dd, fast: sameDay(dd, tomorrow) || sameDay(dd, today), parcels: pc });
+    if (sameDay(sd, today)) oe.subHtml = tr('orderBefore', fmtH(15));
   }
   out.push(oe);
 
-  const freeNote = 'Offerte dès ' + edNum('fees.freeFrom');
-  const oh = { id: 'home', icon: 'box', title: 'Livraison à domicile', fee: free ? 0 : +cfg.fees.home, feePath: 'fees.home' };
-  if (om) { oh.status = 'off'; oh.reason = 'Non disponible en outre-mer'; }
-  else if (!pc) { oh.status = 'off'; oh.reason = 'Stock insuffisant pour cette quantité'; }
+  const oh = { id: 'home', icon: 'box', title: tr('thome'), fee: free ? 0 : +cfg.fees.home, feePath: 'fees.home' };
+  if (om) { oh.status = 'off'; oh.reason = tr('rOm'); }
+  else if (!pc) { oh.status = 'off'; oh.reason = tr('rStock'); }
   else {
-    const sd = shipDay(t, 14), x = corse ? 2 : 0, a = addN(sd, 2 + x, isDelivDay), b = addN(sd, 3 + x, isDelivDay);
-    Object.assign(oh, { status: 'ok', day: a, dayTo: b, when: range(a, b), parcels: pc });
-    oh.subHtml = [has ? '' : 'En France métropolitaine', free ? '' : freeNote].filter(Boolean).join('. ');
+    const sd = shipDay(t, 14), x = corse ? 2 : 0;
+    Object.assign(oh, { status: 'ok', day: addN(sd, 2 + x, isDelivDay), dayTo: addN(sd, 3 + x, isDelivDay), parcels: pc });
+    oh.subHtml = [has ? '' : tr('mainland'), free ? '' : freeNote].filter(Boolean).join('. ');
   }
   out.push(oh);
 
-  const or = { id: 'relay', icon: 'pin', title: 'Livraison en point relais', fee: free ? 0 : +cfg.fees.relay, feePath: 'fees.relay', co2: true };
-  if (om) { or.status = 'off'; or.reason = 'Non disponible en outre-mer'; }
-  else if (!pc) { or.status = 'off'; or.reason = 'Stock insuffisant pour cette quantité'; }
+  const or = { id: 'relay', icon: 'pin', title: tr('trelay'), fee: free ? 0 : +cfg.fees.relay, feePath: 'fees.relay', co2: true };
+  if (om) { or.status = 'off'; or.reason = tr('rOm'); }
+  else if (!pc) { or.status = 'off'; or.reason = tr('rStock'); }
   else {
-    const sd = shipDay(t, 14), x = corse ? 2 : 0, a = addN(sd, 3 + x, isDelivDay), b = addN(sd, 4 + x, isDelivDay);
-    Object.assign(or, { status: 'ok', day: a, dayTo: b, when: range(a, b), parcels: pc });
-    or.subHtml = [has ? '' : 'En France métropolitaine', free ? '' : freeNote].filter(Boolean).join('. ');
+    const sd = shipDay(t, 14), x = corse ? 2 : 0;
+    Object.assign(or, { status: 'ok', day: addN(sd, 3 + x, isDelivDay), dayTo: addN(sd, 4 + x, isDelivDay), parcels: pc });
+    or.subHtml = [has ? '' : tr('mainland'), free ? '' : freeNote].filter(Boolean).join('. ');
   }
   out.push(or);
 
+  out.forEach(o => { if (o.status === 'ok') o.when = whenOf(o, t); });
   return { cp, city: has ? cityOf(cp) : '', has, options: out.filter(o => o.status !== 'off').concat(out.filter(o => o.status === 'off')) };
 }
 
 /* ---------- État ---------- */
 const S = {
-  view: 'pdp', size: (cfg.sizes || []).includes('M') ? 'M' : (cfg.sizes || [])[0], cp: '', cpDraft: '', cpEdit: false, cpErr: '',
+  view: 'pdp', size: (cfg.sizes || []).includes('M') ? 'M' : (cfg.sizes || [])[0], cp: '', cpDraft: '', cpEdit: false, cpErr: false,
   cart: [], drawer: false, lastAdded: null, menu: false,
   acc: { desc: true, comp: false, ship: false },
   co: null, order: null,
@@ -792,120 +984,122 @@ const subtotal = () => r2(S.cart.reduce((a, l) => a + l.qty * price(), 0));
 
 /* ---------- Champs modifiables ---------- */
 const edAttr = () => S.editing ? ' contenteditable="plaintext-only" spellcheck="false"' : '';
-const ed = (path, tag = 'span', cls = '') => '<' + tag + ' class="ed' + (cls ? ' ' + cls : '') + '" data-edit="' + path + '"' + edAttr() + '>' + esc(getPath(cfg, path)) + '</' + tag + '>';
-const edNum = path => '<span class="ed" data-edit="' + path + '" data-num="1"' + edAttr() + '>' + fmtNum(getPath(cfg, path)) + '</span>' + NB + '€';
+const ed = (path, tag = 'span', cls = '') => { const p = lp(path); return '<' + tag + ' class="ed' + (cls ? ' ' + cls : '') + '" data-edit="' + p + '"' + edAttr() + '>' + esc(getPath(cfg, p)) + '</' + tag + '>'; };
+const edNum = path => { const n = '<span class="ed" data-edit="' + path + '" data-num="1"' + edAttr() + '>' + fmtNum(getPath(cfg, path)) + '</span>'; return EN() ? '€' + n : n + NB + '€'; };
 const edStore = s => { const i = cfg.stores.indexOf(s); return i < 0 ? esc(s.name) : ed('stores.' + i + '.name'); };
 
 function imgHtml(size) {
   const src = cfg.product.image || '';
   const show = src && !broken.has(src);
-  return '<span class="ph ' + size + '">' + (show ? '<img src="' + esc(src) + '" alt="' + esc(cfg.product.name) + '" data-pimg="1">' : '') +
-    '<span class="ph-fb">' + ic('hanger') + (size === 'main' ? '<span>Photo produit</span>' : '') + '</span></span>';
+  return '<span class="ph ' + size + '">' + (show ? '<img src="' + esc(src) + '" alt="' + esc(txt('product.name')) + '" data-pimg="1">' : '') +
+    '<span class="ph-fb">' + ic('hanger') + (size === 'main' ? '<span>' + tr('photo') + '</span>' : '') + '</span></span>';
+}
+function langHtml() {
+  return '<div class="lang" role="group" aria-label="' + tr('langGroup') + '">' +
+    '<button type="button" id="lang-fr" data-act="lang" data-v="fr" lang="fr" aria-pressed="' + !EN() + '" aria-label="Français">FR</button><span class="sep" aria-hidden="true">|</span>' +
+    '<button type="button" id="lang-en" data-act="lang" data-v="en" lang="en" aria-pressed="' + EN() + '" aria-label="English">EN</button></div>';
 }
 
 /* ---------- Rendu : header, footer ---------- */
-function topbarHtml() { return '<div class="topbar">' + ed('site.announcement') + '</div>'; }
+function topbarHtml() { return '<div class="topbar"><div class="ann">' + ed('site.announcement') + '</div>' + langHtml() + '</div>'; }
 function headerHtml() {
   const n = cartCount();
-  const nav = (cfg.site.nav || []);
+  const nav = txt('site.nav') || [];
   return '<header class="hdr"><div class="hdr-in">' +
-    '<div class="hdr-l"><button class="ib burger" id="burger" data-act="menu" aria-expanded="' + S.menu + '" aria-label="Menu">' + ic(S.menu ? 'close' : 'menu') + '</button><a href="#" class="logo" data-act="home">' + ed('site.logo') + '</a></div>' +
-    '<nav class="nav" aria-label="Catégories">' + nav.map((x, i) => '<a href="#" data-act="noop">' + ed('site.nav.' + i) + '</a>').join('') + '</nav>' +
+    '<div class="hdr-l"><button class="ib burger" id="burger" data-act="menu" aria-expanded="' + S.menu + '" aria-label="' + tr('menu') + '">' + ic(S.menu ? 'close' : 'menu') + '</button><a href="#" class="logo" data-act="home">' + ed('site.logo') + '</a></div>' +
+    '<nav class="nav" aria-label="' + tr('cats') + '">' + nav.map((x, i) => '<a href="#" data-act="noop">' + ed('site.nav.' + i) + '</a>').join('') + '</nav>' +
     '<div class="hdr-r">' +
-      '<label class="search">' + ic('search') + '<input type="search" placeholder="Rechercher un article" aria-label="Rechercher un article"></label>' +
-      '<button class="ib opt-hide" data-act="noop" aria-label="Trouver un magasin">' + ic('store') + '</button>' +
-      '<button class="ib" data-act="noop" aria-label="Mon compte">' + ic('user') + '</button>' +
-      '<button class="ib opt-hide" data-act="noop" aria-label="Mes favoris">' + ic('heart') + '</button>' +
-      '<button class="ib" id="hdr-cart" data-act="go-cart" aria-label="Panier, ' + n + ' article' + (n > 1 ? 's' : '') + '">' + ic('bag') + (n ? '<span class="badge">' + n + '</span>' : '') + '</button>' +
+      '<label class="search">' + ic('search') + '<input type="search" placeholder="' + tr('search') + '" aria-label="' + tr('search') + '"></label>' +
+      '<button class="ib opt-hide" data-act="noop" aria-label="' + tr('findStore') + '">' + ic('store') + '</button>' +
+      '<button class="ib" data-act="noop" aria-label="' + tr('account') + '">' + ic('user') + '</button>' +
+      '<button class="ib opt-hide" data-act="noop" aria-label="' + tr('wish') + '">' + ic('heart') + '</button>' +
+      '<button class="ib" id="hdr-cart" data-act="go-cart" aria-label="' + tr('cartAria', n) + '">' + ic('bag') + (n ? '<span class="badge">' + n + '</span>' : '') + '</button>' +
     '</div></div>' +
-    (S.menu ? '<nav class="mnav" aria-label="Catégories">' + nav.map(x => '<a href="#" data-act="noop">' + esc(x) + '</a>').join('') + '</nav>' : '') +
+    (S.menu ? '<nav class="mnav" aria-label="' + tr('cats') + '">' + nav.map(x => '<a href="#" data-act="noop">' + esc(x) + '</a>').join('') + '</nav>' : '') +
     '</header>';
 }
 function footerHtml() {
-  const reass = [['bolt', 'Livraison en 2h dans les grandes villes'], ['store', 'Retrait gratuit en magasin'], ['ret', 'Retours gratuits sous 30 jours'], ['lock', 'Paiement sécurisé']];
+  const reass = [['bolt', 'r1'], ['store', 'r2'], ['ret', 'r3'], ['lock', 'r4']];
   const col = (h, items) => '<div><h3>' + h + '</h3><ul>' + items.map(x => '<li><a href="#" data-act="noop">' + x + '</a></li>').join('') + '</ul></div>';
-  return '<div class="reass"><div class="reass-in">' + reass.map(([i, t]) => '<div class="reass-it">' + ic(i) + '<span>' + t + '</span></div>').join('') + '</div></div>' +
+  return '<div class="reass"><div class="reass-in">' + reass.map(([i, k]) => '<div class="reass-it">' + ic(i) + '<span>' + tr(k) + '</span></div>').join('') + '</div></div>' +
     '<footer class="ftr"><div class="ftr-in">' +
-      col('Besoin d’aide', ['Suivre ma commande', 'Livraison et retrait', 'Retours et échanges', 'Nous contacter']) +
-      col('Nos magasins', ['Trouver un magasin', 'Retrait en magasin', 'Carte cadeau']) +
-      col('À propos', ['Nos engagements', 'Recrutement', 'Mentions légales']) +
-      '<div class="nl"><h3>Newsletter</h3><p>Les nouveautés et les ventes privées en avant-première.</p><div class="nl-f"><input type="email" placeholder="Votre e-mail" aria-label="Votre e-mail"><button type="button" data-act="noop">S’inscrire</button></div></div>' +
-    '</div><div class="ftr-bt">© ' + new Date().getFullYear() + ' ' + esc(cfg.site.logo) + '. Démonstration de promesse de livraison, données fictives.</div></footer>';
+      col(tr('help'), tr('helpL')) + col(tr('stores'), tr('storesL')) + col(tr('about'), tr('aboutL')) +
+      '<div class="nl"><h3>' + tr('nlTitle') + '</h3><p>' + tr('nlText') + '</p><div class="nl-f"><input type="email" placeholder="' + tr('nlPh') + '" aria-label="' + tr('nlPh') + '"><button type="button" data-act="noop">' + tr('nlBtn') + '</button></div></div>' +
+    '</div><div class="ftr-bt">' + tr('legal', new Date().getFullYear(), esc(cfg.site.logo)) + '</div></footer>';
 }
 
 /* ---------- Rendu : promesse ---------- */
 function feeHtml(o) {
-  if (o.fee === 0) return '<span class="free">' + (o.id === 'cc' ? 'Gratuit' : 'Offerte') + '</span>';
+  if (o.fee === 0) return '<span class="free">' + (o.id === 'cc' ? tr('free') : tr('offered')) + '</span>';
   return o.feePath ? edNum(o.feePath) : eur(o.fee);
 }
 function whenHtml(o) {
-  if (o.status === 'pending') return '<span class="tbc">À confirmer</span>';
-  if (o.status === 'off') return '<span class="off-txt">Non disponible</span>';
+  if (o.status === 'pending') return '<span class="tbc">' + tr('tbc') + '</span>';
+  if (o.status === 'off') return '<span class="off-txt">' + tr('unavailable') + '</span>';
   return '<span class="when' + (o.fast ? ' fast' : '') + '"><i class="dot"></i>' + esc(o.when) + '</span>';
 }
 function subsHtml(o) {
   const subs = [];
-  if (o.status === 'off') { if (o.reason) subs.push(esc(o.reason)); }
+  if (o.status === 'off') { if (o.reason) subs.push(o.reason); }
   else {
-    if (o.status === 'ok' && o.countdown != null) subs.push('<span class="count">Commandez dans ' + dur(o.countdown) + '</span>');
+    if (o.status === 'ok' && o.countdown != null) subs.push('<span class="count">' + tr('orderWithin', dur(o.countdown)) + '</span>');
     if (o.subHtml) subs.push(o.subHtml);
-    if (o.status === 'pending' && !o.subHtml) subs.push('Selon votre code postal');
+    if (o.status === 'pending' && !o.subHtml) subs.push(tr('byCp'));
   }
   return subs.map(s => '<span class="pl-sub">' + s + '</span>').join('');
 }
 function lineHtml(o) {
-  return '<div class="pl ' + o.status + '"><span class="pl-ico">' + ic(o.icon) + '</span><div><span class="pl-title">' + o.title + (o.co2 && o.status !== 'off' ? CO2 : '') + '</span><span class="pl-when">' + whenHtml(o) + '</span>' + subsHtml(o) + '</div><div class="pl-fee">' + (o.status === 'off' ? '' : feeHtml(o)) + '</div></div>';
+  return '<div class="pl ' + o.status + '"><span class="pl-ico">' + ic(o.icon) + '</span><div><span class="pl-title">' + o.title + (o.co2 && o.status !== 'off' ? co2Html() : '') + '</span><span class="pl-when">' + whenHtml(o) + '</span>' + subsHtml(o) + '</div><div class="pl-fee">' + (o.status === 'off' ? '' : feeHtml(o)) + '</div></div>';
 }
 function promiseBlock(P, ctx, title) {
   let hd;
   if (S.cp && !S.cpEdit) {
-    hd = '<div class="dest"><span class="dest-l">' + ic('pin') + '<span>Livraison à <strong>' + esc(S.cp) + (P.city ? ' ' + esc(P.city) : '') + '</strong></span></span><button class="link" id="cp-edit-' + ctx + '" data-act="cp-edit" data-ctx="' + ctx + '">Modifier</button></div>';
+    hd = '<div class="dest"><span class="dest-l">' + ic('pin') + '<span>' + tr('deliverTo') + ' <strong>' + esc(S.cp) + (P.city ? ' ' + esc(P.city) : '') + '</strong></span></span><button class="link" id="cp-edit-' + ctx + '" data-act="cp-edit" data-ctx="' + ctx + '">' + tr('change') + '</button></div>';
   } else {
-    hd = '<p class="promise-hint">Où souhaitez-vous être livré ou retirer votre article&#8239;?</p>' +
-      '<form class="cp-form" data-form="cp" data-ctx="' + ctx + '" novalidate><label class="sr" for="cp-in-' + ctx + '">Code postal</label><input id="cp-in-' + ctx + '" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="Code postal, par exemple 75015" value="' + esc(S.cpDraft) + '"' + (S.cpErr ? ' aria-invalid="true" aria-describedby="cp-err-' + ctx + '"' : '') + '><button type="submit">Valider</button></form>' +
-      (S.cpErr ? '<p class="err" id="cp-err-' + ctx + '">' + esc(S.cpErr) + '</p>' : '');
+    hd = '<p class="promise-hint">' + tr('hint') + '</p>' +
+      '<form class="cp-form" data-form="cp" data-ctx="' + ctx + '" novalidate><label class="sr" for="cp-in-' + ctx + '">' + tr('cpLabel') + '</label><input id="cp-in-' + ctx + '" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="' + tr('cpPh') + '" value="' + esc(S.cpDraft) + '"' + (S.cpErr ? ' aria-invalid="true" aria-describedby="cp-err-' + ctx + '"' : '') + '><button type="submit">' + tr('cpBtn') + '</button></form>' +
+      (S.cpErr ? '<p class="err" id="cp-err-' + ctx + '">' + tr('cpErr') + '</p>' : '');
   }
   return '<section class="promise" aria-labelledby="pr-' + ctx + '"><div class="promise-hd"><h2 class="promise-title" id="pr-' + ctx + '">' + title + '</h2>' + hd + '</div><div class="pls">' + P.options.map(lineHtml).join('') + '</div></section>';
 }
 
 /* ---------- Rendu : fiche produit ---------- */
 function stockMsg(z) {
-  const t = stTot(z);
-  if (!t) return '<span class="dot off"></span>Taille épuisée';
-  if (t <= 3) return '<span class="dot low"></span>Plus que ' + t + ' pièce' + (t > 1 ? 's' : '') + ' disponible' + (t > 1 ? 's' : '');
-  return '<span class="dot"></span>En stock';
+  const n = stTot(z);
+  if (!n) return '<span class="dot off"></span>' + tr('soldOut');
+  if (n <= 3) return '<span class="dot low"></span>' + tr('low', n);
+  return '<span class="dot"></span>' + tr('inStock');
 }
 function pdpHtml() {
   const t = now();
   const P = computePromise([{ size: S.size, qty: 1 }], S.cp, t, price());
   const out = !stTot(S.size);
   const acc = (k, title, body) => '<details data-acc="' + k + '"' + (S.acc[k] ? ' open' : '') + '><summary>' + title + '</summary>' + body + '</details>';
-  return '<nav class="crumbs" aria-label="Fil d’Ariane"><a href="#" data-act="noop">Accueil</a><span aria-hidden="true">/</span><a href="#" data-act="noop">' + ed('product.department') + '</a><span aria-hidden="true">/</span><a href="#" data-act="noop">' + ed('product.category') + '</a><span aria-hidden="true">/</span><span aria-current="page">' + ed('product.name') + '</span></nav>' +
+  return '<nav class="crumbs" aria-label="' + tr('crumbs') + '"><a href="#" data-act="noop">' + tr('home') + '</a><span aria-hidden="true">/</span><a href="#" data-act="noop">' + ed('product.department') + '</a><span aria-hidden="true">/</span><a href="#" data-act="noop">' + ed('product.category') + '</a><span aria-hidden="true">/</span><span aria-current="page">' + ed('product.name') + '</span></nav>' +
     '<main class="pdp"><div class="media">' + imgHtml('main') +
-      (S.editing && EDIT.assets ? '<button class="media-edit" data-act="upload">' + ic('image') + 'Changer la photo</button>' : '') +
+      (S.editing && EDIT.assets ? '<button class="media-edit" data-act="upload">' + ic('image') + tr('changePhoto') + '</button>' : '') +
     '</div><div class="info">' +
       '<h1 class="p-name">' + ed('product.name') + '</h1>' +
-      '<p class="p-ref">Réf. ' + ed('product.ref') + '</p>' +
+      '<p class="p-ref">' + tr('ref') + ' ' + ed('product.ref') + '</p>' +
       '<p class="p-price">' + edNum('product.price') + '</p>' +
-      '<div class="p-colour"><span class="lbl">Couleur&nbsp;: <strong>' + ed('product.colour') + '</strong></span><div class="swatches"><span class="sw" title="' + esc(cfg.product.colour) + '">' + imgHtml('sm') + '</span></div></div>' +
-      '<div><div class="row"><span class="lbl">Taille</span><a href="#" class="link-sm" data-act="noop">Guide des tailles</a></div>' +
-        '<div class="sizes" role="radiogroup" aria-label="Taille">' + cfg.sizes.map(z => '<button type="button" class="sz' + (stTot(z) ? '' : ' out') + '" role="radio" aria-checked="' + (z === S.size) + '" id="sz-' + z + '" data-act="size" data-v="' + z + '">' + z + '</button>').join('') + '</div>' +
+      '<div class="p-colour"><span class="lbl">' + tr('colourLbl') + ' <strong>' + ed('product.colour') + '</strong></span><div class="swatches"><span class="sw" title="' + esc(txt('product.colour')) + '">' + imgHtml('sm') + '</span></div></div>' +
+      '<div><div class="row"><span class="lbl">' + tr('size') + '</span><a href="#" class="link-sm" data-act="noop">' + tr('sizeGuide') + '</a></div>' +
+        '<div class="sizes" role="radiogroup" aria-label="' + tr('size') + '">' + cfg.sizes.map(z => '<button type="button" class="sz' + (stTot(z) ? '' : ' out') + '" role="radio" aria-checked="' + (z === S.size) + '" id="sz-' + z + '" data-act="size" data-v="' + z + '">' + z + '</button>').join('') + '</div>' +
         '<p class="stock-msg" aria-live="polite">' + stockMsg(S.size) + '</p></div>' +
-      '<button class="btn-primary" id="add-btn" data-act="add"' + (out ? ' disabled' : '') + '>' + (out ? 'Taille épuisée' : 'Ajouter au panier') + '</button>' +
-      promiseBlock(P, 'pdp', 'Livraison et retrait') +
+      '<button class="btn-primary" id="add-btn" data-act="add"' + (out ? ' disabled' : '') + '>' + (out ? tr('soldOut') : tr('add')) + '</button>' +
+      promiseBlock(P, 'pdp', tr('pTitle')) +
       '<div class="acc">' +
-        acc('desc', 'Description', ed('product.description', 'p', 'acc-b')) +
-        acc('comp', 'Composition et entretien', ed('product.composition', 'p', 'acc-b')) +
-        acc('ship', 'Livraison et retours', '<p class="acc-b">Livraison en 2h dans les villes où nous avons un magasin, retrait gratuit en magasin, livraison à domicile ou en point relais offerte dès ' + edNum('fees.freeFrom') + '. Retours gratuits sous 30 jours en magasin ou en point relais.</p>') +
+        acc('desc', tr('accDesc'), ed('product.description', 'p', 'acc-b')) +
+        acc('comp', tr('accComp'), ed('product.composition', 'p', 'acc-b')) +
+        acc('ship', tr('accShip'), '<p class="acc-b">' + tr('shipText', edNum('fees.freeFrom')) + '</p>') +
       '</div>' +
     '</div></main>';
 }
 
 /* ---------- Rendu : tiroir panier ---------- */
-function miniRows(P, t) {
-  const ok = P.options.filter(o => o.status === 'ok');
-  if (!P.has) return '<p class="mini-p">Indiquez votre code postal dans le panier pour voir les délais de livraison et de retrait.</p>';
-  return ok.slice(0, 3).map(o => '<div class="mini-row">' + ic(o.icon) + '<span><strong>' + o.title + '</strong><span class="mini-w' + (o.fast ? '' : ' slow') + '">' + esc(o.when) + '</span></span><span>' + feeHtml(o) + '</span></div>').join('');
+function miniRows(P) {
+  if (!P.has) return '<p class="mini-p">' + tr('miniNoCp') + '</p>';
+  return P.options.filter(o => o.status === 'ok').slice(0, 3).map(o => '<div class="mini-row">' + ic(o.icon) + '<span><strong>' + o.title + '</strong><span class="mini-w' + (o.fast ? '' : ' slow') + '">' + esc(o.when) + '</span></span><span>' + feeHtml(o) + '</span></div>').join('');
 }
 function drawerHtml() {
   if (!S.drawer) return '';
@@ -915,30 +1109,30 @@ function drawerHtml() {
   const P = computePromise(S.cart, S.cp, t, subtotal());
   const n = cartCount();
   return '<div class="scrim" data-act="close-drawer"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-t">' +
-    '<div class="dr-hd"><h2 id="dr-t">' + ic('check') + 'Ajouté au panier</h2><button class="ib" id="dr-close" data-act="close-drawer" aria-label="Fermer">' + ic('close') + '</button></div>' +
-    '<div class="dr-body"><div class="item">' + imgHtml('sm') + '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">' + esc(cfg.product.colour) + ', taille ' + esc(line.size) + '</p><p class="item-meta">Quantité&nbsp;: ' + line.qty + '</p></div><p class="item-price">' + eur(price()) + '</p></div>' +
-      '<div class="mini"><h3>' + (P.has ? 'Pour ' + esc(S.cp) + (P.city ? ' ' + esc(P.city) : '') : 'Livraison et retrait') + '</h3>' + miniRows(P, t) + '</div></div>' +
-    '<div class="dr-ft"><button class="btn-primary" id="dr-cart" data-act="go-cart">Voir mon panier (' + n + ')</button><button class="btn-ghost" data-act="close-drawer">Continuer mes achats</button></div></aside>';
+    '<div class="dr-hd"><h2 id="dr-t">' + ic('check') + tr('added') + '</h2><button class="ib" id="dr-close" data-act="close-drawer" aria-label="' + tr('close') + '">' + ic('close') + '</button></div>' +
+    '<div class="dr-body"><div class="item">' + imgHtml('sm') + '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">' + tr('colourSize', esc(txt('product.colour')), esc(line.size)) + '</p><p class="item-meta">' + tr('qty', line.qty) + '</p></div><p class="item-price">' + eur(price()) + '</p></div>' +
+      '<div class="mini"><h3>' + (P.has ? tr('forCp', esc(S.cp) + (P.city ? ' ' + esc(P.city) : '')) : tr('pTitle')) + '</h3>' + miniRows(P) + '</div></div>' +
+    '<div class="dr-ft"><button class="btn-primary" id="dr-cart" data-act="go-cart">' + tr('viewCart', n) + '</button><button class="btn-ghost" data-act="close-drawer">' + tr('keepShopping') + '</button></div></aside>';
 }
 
 /* ---------- Rendu : panier ---------- */
 function cartHtml() {
-  if (!S.cart.length) return '<main class="cart"><h1>Mon panier</h1><div class="empty"><p>Votre panier est vide.</p><button class="btn-primary w-auto" data-act="home">Retour à l’article</button></div></main>';
+  if (!S.cart.length) return '<main class="cart"><h1>' + tr('myCart') + '</h1><div class="empty"><p>' + tr('emptyCart') + '</p><button class="btn-primary w-auto" data-act="home">' + tr('backItem') + '</button></div></main>';
   const t = now(), sub = subtotal(), n = cartCount();
   const P = computePromise(S.cart, S.cp, t, sub);
   const lines = S.cart.map((l, i) => '<div class="cline">' + imgHtml('sm') +
-    '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">Couleur&nbsp;: ' + esc(cfg.product.colour) + ', taille ' + esc(l.size) + '</p><p class="item-meta">Réf. ' + esc(cfg.product.ref) + '</p>' +
-    '<div class="cl-acts"><div class="qty"><button id="qm-' + i + '" data-act="qty" data-i="' + i + '" data-d="-1" aria-label="Retirer un article"' + (l.qty <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + l.qty + '</span><button id="qp-' + i + '" data-act="qty" data-i="' + i + '" data-d="1" aria-label="Ajouter un article"' + (l.qty >= qtyMax(l.size) ? ' disabled' : '') + '>+</button></div><button class="rm" data-act="remove" data-i="' + i + '">Supprimer</button></div></div>' +
+    '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">' + tr('colourLine', esc(txt('product.colour')), esc(l.size)) + '</p><p class="item-meta">' + tr('ref') + ' ' + esc(cfg.product.ref) + '</p>' +
+    '<div class="cl-acts"><div class="qty"><button id="qm-' + i + '" data-act="qty" data-i="' + i + '" data-d="-1" aria-label="' + tr('minus') + '"' + (l.qty <= 1 ? ' disabled' : '') + '>−</button><span aria-live="polite">' + l.qty + '</span><button id="qp-' + i + '" data-act="qty" data-i="' + i + '" data-d="1" aria-label="' + tr('plus') + '"' + (l.qty >= qtyMax(l.size) ? ' disabled' : '') + '>+</button></div><button class="rm" data-act="remove" data-i="' + i + '">' + tr('remove') + '</button></div></div>' +
     '<p class="item-price">' + eur(l.qty * price()) + '</p></div>').join('');
-  return '<main class="cart"><h1>Mon panier <span class="h-muted">(' + n + ' article' + (n > 1 ? 's' : '') + ')</span></h1><div class="cart-grid"><div>' + lines +
-    '<div class="cart-prom">' + promiseBlock(P, 'cart', 'Livraison et retrait de votre panier') + '</div>' +
-    '<a href="#" class="back-link" data-act="home">Continuer mes achats</a></div>' +
-    '<aside class="sum" aria-labelledby="sum-t"><h2 id="sum-t">Récapitulatif</h2>' +
-      '<div class="srow"><span>Sous-total</span><span>' + eur(sub) + '</span></div>' +
-      '<div class="srow"><span>Livraison</span><span>' + (sub >= +cfg.fees.freeFrom ? '<span class="free">Offerte à domicile</span>' : 'Calculée à l’étape suivante') + '</span></div>' +
-      '<div class="srow tot"><span>Total</span><span>' + eur(sub) + '</span></div>' +
-      '<button class="btn-primary" id="go-co" data-act="checkout">Valider mon panier</button>' +
-      '<p class="pay-note">' + ic('lock') + 'Carte bancaire, PayPal ou Apple Pay</p>' +
+  return '<main class="cart"><h1>' + tr('myCart') + ' <span class="h-muted">(' + tr('items', n) + ')</span></h1><div class="cart-grid"><div>' + lines +
+    '<div class="cart-prom">' + promiseBlock(P, 'cart', tr('pTitleCart')) + '</div>' +
+    '<a href="#" class="back-link" data-act="home">' + tr('keepShopping') + '</a></div>' +
+    '<aside class="sum" aria-labelledby="sum-t"><h2 id="sum-t">' + tr('summary') + '</h2>' +
+      '<div class="srow"><span>' + tr('subtotal') + '</span><span>' + eur(sub) + '</span></div>' +
+      '<div class="srow"><span>' + tr('delivery') + '</span><span>' + (sub >= +cfg.fees.freeFrom ? '<span class="free">' + tr('freeHome') + '</span>' : tr('nextStep')) + '</span></div>' +
+      '<div class="srow tot"><span>' + tr('total') + '</span><span>' + eur(sub) + '</span></div>' +
+      '<button class="btn-primary" id="go-co" data-act="checkout">' + tr('checkout') + '</button>' +
+      '<p class="pay-note">' + ic('lock') + tr('payMeans') + '</p>' +
     '</aside></div></main>';
 }
 
@@ -952,6 +1146,7 @@ function initCheckout() {
     if (S.co.autoCity || !S.co.form.city) S.co.form.city = cityOf(S.cp);
   }
 }
+const coSel = () => ({ slot: S.co.slot, storeId: S.co.store, relay: S.co.relay });
 function coPromise() { const t = now(); return { t, P: computePromise(S.cart, S.co.form.cp, t, subtotal()) }; }
 function ensureSel(P) {
   const ok = P.options.filter(o => o.status === 'ok');
@@ -962,101 +1157,93 @@ function ensureSel(P) {
   if (o && o.id === 'relay' && !(S.co.relay >= 0 && S.co.relay < 3)) S.co.relay = 0;
   return o;
 }
-function addrLine() { const f = S.co.form; const parts = [f.street, f.extra].map(x => (x || '').trim()).filter(Boolean); return (parts.length ? parts.join(', ') + ', ' : '') + f.cp + (f.city ? ' ' + f.city : ''); }
-function selWhen(o, t) {
-  if (!o) return '';
-  if (o.id === '2h') return dayWord(o.day, t) + ' entre ' + fmtH(S.co.slot) + ' et ' + fmtH(S.co.slot + 2);
-  if (o.id === 'cc') { const x = o.stores.find(y => y.s.id === S.co.store) || o.pick; return readyLabel(x, t); }
-  return o.when;
+function addrLine(f) { const parts = [f.street, f.extra].map(x => (x || '').trim()).filter(Boolean); return (parts.length ? parts.join(', ') + ', ' : '') + f.cp + (f.city ? ' ' + f.city : ''); }
+function placeOf(o, sel, f) {
+  if (o.id === 'cc') { const x = ((sel.storeId && o.stores.find(y => y.s.id === sel.storeId)) || o.pick).s; return tr('storePlace', x.name, x.address + ', ' + x.cp + ' ' + x.city); }
+  if (o.id === 'relay') { const rs = relays(f.cp, f.city); const r = rs[sel.relay] || rs[0]; return r.name + ', ' + r.address; }
+  return addrLine(f);
 }
-function selPlace(o) {
-  if (!o) return '';
-  const f = S.co.form;
-  if (o.id === 'cc') { const x = (o.stores.find(y => y.s.id === S.co.store) || o.pick).s; return 'Magasin ' + x.name + ', ' + x.address + ', ' + x.cp + ' ' + x.city; }
-  if (o.id === 'relay') { const r = relays(f.cp, f.city)[S.co.relay] || relays(f.cp, f.city)[0]; return r.name + ', ' + r.address; }
-  return addrLine();
-}
-function fld(k, label, ac, full) {
+function fld(k, labelKey, ac, full) {
   const v = S.co.form[k] || '', er = S.co.errors[k];
   const extra = k === 'cp' ? ' inputmode="numeric" maxlength="5"' : k === 'email' ? ' type="email"' : k === 'phone' ? ' type="tel"' : '';
-  return '<div class="fld' + (full ? ' full' : '') + (er ? ' has-err' : '') + '"><label for="f-' + k + '">' + label + '</label><input id="f-' + k + '" data-f="' + k + '" autocomplete="' + ac + '" value="' + esc(v) + '"' + extra + (er ? ' aria-invalid="true" aria-describedby="fe-' + k + '"' : '') + '>' + (er ? '<p class="fld-err" id="fe-' + k + '">' + esc(er) + '</p>' : '') + '</div>';
+  return '<div class="fld' + (full ? ' full' : '') + (er ? ' has-err' : '') + '"><label for="f-' + k + '">' + tr(labelKey) + '</label><input id="f-' + k + '" data-f="' + k + '" autocomplete="' + ac + '" value="' + esc(v) + '"' + extra + (er ? ' aria-invalid="true" aria-describedby="fe-' + k + '"' : '') + '>' + (er ? '<p class="fld-err" id="fe-' + k + '">' + tr(er) + '</p>' : '') + '</div>';
 }
 function optDetail(o, t) {
   const f = S.co.form;
   if (o.id === '2h') {
-    return '<div class="opt-det"><p class="det-lbl">Choisissez votre créneau, ' + esc(dayWord(o.day, t).toLowerCase()) + '</p><div class="slots">' +
+    return '<div class="opt-det"><p class="det-lbl">' + tr('chooseSlot', esc(dayWordInline(o.day, t))) + '</p><div class="slots">' +
       o.slots.map(s => '<button type="button" class="slot" id="slot-' + s.start + '" data-act="slot" data-v="' + s.start + '" aria-pressed="' + (s.start === S.co.slot) + '">' + fmtH(s.start) + ' – ' + fmtH(s.end) + '</button>').join('') +
-      '</div><p>' + (S.co.form.street.trim() ? 'Livré par coursier au ' + esc(addrLine()) + '.' : 'Renseignez votre adresse ci-dessus.') + '</p></div>';
+      '</div><p>' + (f.street.trim() ? tr('byCourier', esc(addrLine(f))) : tr('fillAddr')) + '</p></div>';
   }
   if (o.id === 'cc') {
-    return '<div class="opt-det"><p class="det-lbl">Choisissez votre magasin</p><div class="chs">' + o.stores.map(x => {
+    return '<div class="opt-det"><p class="det-lbl">' + tr('chooseStore') + '</p><div class="chs">' + o.stores.map(x => {
       const ok = x.ok || x.transfer, sel = ok && x.s.id === S.co.store;
       return '<label class="ch' + (sel ? ' is-sel' : '') + (ok ? '' : ' dis') + '" for="st-' + x.s.id + '"><input type="radio" name="store" id="st-' + x.s.id + '" value="' + x.s.id + '"' + (sel ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
-        '<span><strong>' + edStore(x.s) + '</strong><br>' + esc(x.s.address + ', ' + x.s.cp + ' ' + x.s.city) + '<br><span class="' + (x.ok ? 'ok-t' : '') + '">' + (ok ? esc(readyLabel(x, t)) + (x.transfer ? ', envoyé depuis notre entrepôt' : '') : 'Indisponible dans votre taille') + '</span></span><span class="ch-km">' + fmtKm(x.km) + '</span></label>';
+        '<span><strong>' + edStore(x.s) + '</strong><br>' + esc(x.s.address + ', ' + x.s.cp + ' ' + x.s.city) + '<br><span class="' + (x.ok ? 'ok-t' : '') + '">' + (ok ? esc(readyLabel(x, t)) + (x.transfer ? tr('sentFromWh') : '') : tr('notInSize')) + '</span></span><span class="ch-km">' + fmtKm(x.km) + '</span></label>';
     }).join('') + '</div></div>';
   }
   if (o.id === 'relay') {
-    return '<div class="opt-det"><p class="det-lbl">Choisissez votre point relais</p><div class="chs">' + relays(f.cp, f.city).map((r, i) => {
+    return '<div class="opt-det"><p class="det-lbl">' + tr('chooseRelay') + '</p><div class="chs">' + relays(f.cp, f.city).map((r, i) => {
       const sel = i === S.co.relay;
-      return '<label class="ch' + (sel ? ' is-sel' : '') + '" for="rl-' + i + '"><input type="radio" name="relay" id="rl-' + i + '" value="' + i + '"' + (sel ? ' checked' : '') + '><span><strong>' + esc(r.name) + '</strong><br>' + esc(r.address) + '<br>' + esc(r.hours) + '</span><span class="ch-km">' + fmtKm(r.km) + '</span></label>';
+      return '<label class="ch' + (sel ? ' is-sel' : '') + '" for="rl-' + i + '"><input type="radio" name="relay" id="rl-' + i + '" value="' + i + '"' + (sel ? ' checked' : '') + '><span><strong>' + esc(r.name) + '</strong><br>' + esc(r.address) + '<br>' + tr('openUntil', fmtH(r.until)) + '</span><span class="ch-km">' + fmtKm(r.km) + '</span></label>';
     }).join('') + '</div></div>';
   }
   const pc = o.parcels || [];
-  return '<div class="opt-det"><p>' + (S.co.form.street.trim() ? 'Livré au ' + esc(addrLine()) + '.' : 'Renseignez votre adresse ci-dessus.') + '</p>' +
-    (pc.length > 1 ? '<p class="parcels">Livré en ' + pc.length + ' colis&nbsp;: ' + pc.map(g => 'taille ' + g.lines.map(l => l.size).join(', ') + ' depuis ' + esc(srcLabel(g.src))).join(', ') + '.</p>' : '') + '</div>';
+  return '<div class="opt-det"><p>' + (f.street.trim() ? tr('deliveredTo', esc(addrLine(f))) : tr('fillAddr')) + '</p>' +
+    (pc.length > 1 ? '<p class="parcels">' + tr('parcels', pc.length, pc.map(g => tr('parcelItem', esc(g.lines.map(l => l.size).join(', ')), esc(srcLabel(g.src)))).join(', ')) + '</p>' : '') + '</div>';
 }
 function coOptsHtml() {
   const { t, P } = coPromise();
-  let h = '<h2><span class="n">2</span>Mode de livraison</h2>';
-  if (!validCp(S.co.form.cp)) return h + '<p class="muted-p">Saisissez votre code postal pour afficher les modes de livraison disponibles.</p>';
+  let h = '<h2><span class="n">2</span>' + tr('secMode') + '</h2>';
+  if (!validCp(S.co.form.cp)) return h + '<p class="muted-p">' + tr('modeNoCp') + '</p>';
   ensureSel(P);
-  h += '<div role="radiogroup" aria-label="Mode de livraison">' + P.options.map(o0 => {
+  h += '<div role="radiogroup" aria-label="' + tr('secMode') + '">' + P.options.map(o0 => {
     const sel = o0.id === S.co.mode, dis = o0.status !== 'ok';
     let o = o0;
     if (sel && o0.id === '2h' && S.co.slot != null) {
       const c = new Date(startOfDay(o0.day)); c.setMinutes((S.co.slot - 1.5) * 60);
-      o = Object.assign({}, o0, { when: selWhen(o0, t), countdown: sameDay(o0.day, t) ? (c - t) / 60000 : undefined });
+      o = Object.assign({}, o0, { when: whenOf(o0, t, coSel()), countdown: sameDay(o0.day, t) ? (c - t) / 60000 : undefined });
     }
     return '<div class="opt' + (sel ? ' is-sel' : '') + (dis ? ' off' : '') + '"><label class="opt-row" for="opt-' + o.id + '"><input type="radio" name="mode" id="opt-' + o.id + '" value="' + o.id + '"' + (sel ? ' checked' : '') + (dis ? ' disabled' : '') + '>' +
-      '<span class="pl-ico">' + ic(o.icon) + '</span><span><span class="pl-title">' + o.title + (o.co2 && !dis ? CO2 : '') + '</span><span class="pl-when">' + whenHtml(o) + '</span>' + subsHtml(o) + '</span>' +
+      '<span class="pl-ico">' + ic(o.icon) + '</span><span><span class="pl-title">' + o.title + (o.co2 && !dis ? co2Html() : '') + '</span><span class="pl-when">' + whenHtml(o) + '</span>' + subsHtml(o) + '</span>' +
       '<span class="pl-fee">' + (dis ? '' : feeHtml(o)) + '</span></label>' + (sel && !dis ? optDetail(o, t) : '') + '</div>';
   }).join('') + '</div>';
-  if (S.co.errors.mode) h += '<p class="err">' + esc(S.co.errors.mode) + '</p>';
+  if (S.co.errors.mode) h += '<p class="err">' + tr(S.co.errors.mode) + '</p>';
   return h;
 }
 function coSumHtml() {
   const { t, P } = coPromise();
   const o = validCp(S.co.form.cp) ? ensureSel(P) : null;
   const sub = subtotal(), fee = o ? o.fee : 0, tot = r2(sub + fee);
-  const items = S.cart.map(l => '<div class="item">' + imgHtml('sm') + '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">Taille ' + esc(l.size) + ', quantité ' + l.qty + '</p></div><p class="item-price">' + eur(l.qty * price()) + '</p></div>').join('');
+  const items = S.cart.map(l => '<div class="item">' + imgHtml('sm') + '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">' + tr('sizeQty', esc(l.size), l.qty) + '</p></div><p class="item-price">' + eur(l.qty * price()) + '</p></div>').join('');
   const nErr = Object.keys(S.co.errors).length;
-  return '<h2>Votre commande</h2><div class="co-items">' + items + '</div>' +
-    (o ? '<div class="sp">' + ic(o.icon) + '<div><p class="sp-t">' + o.title + '</p><p class="sp-w">' + esc(selWhen(o, t)) + '</p><p class="sp-a">' + esc(selPlace(o)) + '</p></div></div>' : '') +
-    '<div class="srow"><span>Sous-total</span><span>' + eur(sub) + '</span></div>' +
-    '<div class="srow"><span>Livraison</span><span>' + (!o ? '–' : fee ? eur(fee) : '<span class="free">' + (o.id === 'cc' ? 'Gratuit' : 'Offerte') + '</span>') + '</span></div>' +
-    '<div class="srow tot"><span>Total TTC</span><span>' + eur(tot) + '</span></div>' +
-    '<button class="btn-primary" id="pay-btn" data-act="pay">Payer ' + eur(tot) + '</button>' +
-    (nErr ? '<p class="err-box" role="alert">Vérifiez les champs signalés pour finaliser la commande.</p>' : '') +
-    '<p class="pay-note">' + ic('lock') + 'Paiement sécurisé</p>';
+  return '<h2>' + tr('yourOrder') + '</h2><div class="co-items">' + items + '</div>' +
+    (o ? '<div class="sp">' + ic(o.icon) + '<div><p class="sp-t">' + o.title + '</p><p class="sp-w">' + esc(whenOf(o, t, coSel())) + '</p><p class="sp-a">' + esc(placeOf(o, coSel(), S.co.form)) + '</p></div></div>' : '') +
+    '<div class="srow"><span>' + tr('subtotal') + '</span><span>' + eur(sub) + '</span></div>' +
+    '<div class="srow"><span>' + tr('delivery') + '</span><span>' + (!o ? '–' : fee ? eur(fee) : '<span class="free">' + (o.id === 'cc' ? tr('free') : tr('offered')) + '</span>') + '</span></div>' +
+    '<div class="srow tot"><span>' + tr('totalTtc') + '</span><span>' + eur(tot) + '</span></div>' +
+    '<button class="btn-primary" id="pay-btn" data-act="pay">' + tr('pay', eur(tot)) + '</button>' +
+    (nErr ? '<p class="err-box" role="alert">' + tr('checkFields') + '</p>' : '') +
+    '<p class="pay-note">' + ic('lock') + tr('secure') + '</p>';
 }
 function payHtml() {
-  const PAYS = [['card', 'Carte bancaire', 'card'], ['paypal', 'PayPal', ''], ['apple', 'Apple Pay', '']];
-  return '<h2><span class="n">3</span>Paiement</h2><div class="chs" role="radiogroup" aria-label="Moyen de paiement">' + PAYS.map(([v, l, i]) => {
+  const PAYS = [['card', tr('card'), 'card'], ['paypal', 'PayPal', ''], ['apple', 'Apple Pay', '']];
+  return '<h2><span class="n">3</span>' + tr('secPay') + '</h2><div class="chs" role="radiogroup" aria-label="' + tr('payGroup') + '">' + PAYS.map(([v, l, i]) => {
     const sel = S.co.pay === v;
     return '<label class="ch' + (sel ? ' is-sel' : '') + '" for="pay-' + v + '"><input type="radio" name="pay" id="pay-' + v + '" value="' + v + '"' + (sel ? ' checked' : '') + '><span><strong>' + l + '</strong></span><span>' + (i ? ic(i) : '') + '</span></label>';
-  }).join('') + '</div><p class="demo-note">Démonstration&nbsp;: aucun paiement n’est effectué.</p>';
+  }).join('') + '</div><p class="demo-note">' + tr('demoPay') + '</p>';
 }
 function checkoutHtml() {
   return '<header class="co-hdr"><div class="co-in"><a href="#" class="logo" data-act="home">' + ed('site.logo') + '</a>' +
-    '<ol class="steps"><li class="done">Panier</li><li class="cur" aria-current="step">Livraison et paiement</li><li>Confirmation</li></ol>' +
-    '<span class="secure">' + ic('lock') + 'Paiement sécurisé</span></div></header>' +
+    '<ol class="steps"><li class="done">' + tr('stCart') + '</li><li class="cur" aria-current="step">' + tr('stDel') + '</li><li>' + tr('stConf') + '</li></ol>' +
+    '<div class="co-r"><span class="secure">' + ic('lock') + tr('secure') + '</span>' + langHtml() + '</div></div></header>' +
     '<main class="co"><div>' +
-      '<button class="back" data-act="go-cart">' + ic('chev') + 'Retour au panier</button>' +
-      '<section class="co-sec"><h2><span class="n">1</span>Adresse de livraison</h2><div class="grid2">' +
-        fld('firstName', 'Prénom', 'given-name') + fld('lastName', 'Nom', 'family-name') +
-        fld('street', 'Adresse', 'address-line1', true) + fld('extra', 'Complément d’adresse (facultatif)', 'address-line2', true) +
-        fld('cp', 'Code postal', 'postal-code') + fld('city', 'Ville', 'address-level2') +
-        fld('phone', 'Téléphone mobile', 'tel') + fld('email', 'E-mail', 'email') +
+      '<button class="back" data-act="go-cart">' + ic('chev') + tr('backCart') + '</button>' +
+      '<section class="co-sec"><h2><span class="n">1</span>' + tr('secAddr') + '</h2><div class="grid2">' +
+        fld('firstName', 'fFirst', 'given-name') + fld('lastName', 'fLast', 'family-name') +
+        fld('street', 'fStreet', 'address-line1', true) + fld('extra', 'fExtra', 'address-line2', true) +
+        fld('cp', 'fCp', 'postal-code') + fld('city', 'fCity', 'address-level2') +
+        fld('phone', 'fPhone', 'tel') + fld('email', 'fEmail', 'email') +
       '</div></section>' +
       '<section class="co-sec" id="co-opts">' + coOptsHtml() + '</section>' +
       '<section class="co-sec" id="co-pay">' + payHtml() + '</section>' +
@@ -1075,14 +1262,14 @@ function pay() {
   const f = S.co.form, errs = {};
   const { t, P } = coPromise();
   const o = validCp(f.cp) ? ensureSel(P) : null;
-  ['firstName', 'lastName', 'phone', 'email'].forEach(k => { if (!String(f[k] || '').trim()) errs[k] = 'Champ obligatoire'; });
-  if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) errs.email = 'Adresse e-mail invalide';
-  if (!validCp(f.cp)) errs.cp = 'Code postal à 5 chiffres';
+  ['firstName', 'lastName', 'phone', 'email'].forEach(k => { if (!String(f[k] || '').trim()) errs[k] = 'errReq'; });
+  if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) errs.email = 'errEmail';
+  if (!validCp(f.cp)) errs.cp = 'errCp';
   if (o && ['2h', 'express', 'home'].includes(o.id)) {
-    if (!f.street.trim()) errs.street = 'Indiquez votre adresse';
-    if (!f.city.trim()) errs.city = 'Indiquez votre ville';
+    if (!f.street.trim()) errs.street = 'errStreet';
+    if (!f.city.trim()) errs.city = 'errCity';
   }
-  if (validCp(f.cp) && !o) errs.mode = 'Aucun mode de livraison n’est disponible pour cette adresse.';
+  if (validCp(f.cp) && !o) errs.mode = 'errMode';
   S.co.errors = errs;
   if (Object.keys(errs).length) {
     renderPage();
@@ -1091,63 +1278,67 @@ function pay() {
     if (el) el.focus();
     return;
   }
-  const sub = subtotal(), fee = o.fee;
-  let source = '';
-  if (o.id === '2h') source = 'magasin ' + o.store.name;
-  else if (o.id === 'cc') { const x = o.stores.find(y => y.s.id === S.co.store) || o.pick; source = x.transfer ? 'notre entrepôt' : 'magasin ' + x.s.name; }
-  else source = (o.parcels || []).map(g => srcLabel(g.src)).join(' et ');
-  const whenTxt = selWhen(o, t), place = selPlace(o);
-  const steps = [['Commande confirmée', 'Aujourd’hui à ' + fmtH(hours(t)), true]];
-  if (o.id === '2h') steps.push(['Préparation en magasin', 'Magasin ' + o.store.name], ['Remise au coursier', 'Vous recevez un SMS de suivi'], ['Livraison', whenTxt]);
-  else if (o.id === 'cc') steps.push([source === 'notre entrepôt' ? 'Envoi vers le magasin' : 'Préparation en magasin', source === 'notre entrepôt' ? 'Depuis notre entrepôt' : cap(source)], ['Prête à retirer', whenTxt + ', vous recevez un SMS'], ['Retrait', 'Sur présentation de l’e-mail de confirmation']);
-  else steps.push(['Préparation', 'Depuis ' + source], ['Expédition', 'Vous recevez un e-mail de suivi'], ['Livraison', whenTxt]);
+  const sub = subtotal();
   S.order = {
     no: 'CMD-' + ymd(t).replace(/-/g, '').slice(2) + '-' + (1000 + Math.floor(Math.random() * 9000)),
-    title: o.title, icon: o.icon, whenTxt, place, firstName: f.firstName.trim(), email: f.email.trim(),
-    items: S.cart.map(l => ({ size: l.size, qty: l.qty })), sub, fee, total: r2(sub + fee), steps, mode: o.id
+    o, sel: coSel(), form: Object.assign({}, f), t,
+    items: S.cart.map(l => ({ size: l.size, qty: l.qty })), sub, fee: o.fee, total: r2(sub + o.fee)
   };
   S.cart = [];
   go('confirm');
 }
 
 /* ---------- Confirmation ---------- */
+function stepsOf(ord) {
+  const { o, sel, t } = ord;
+  const w = esc(whenOf(o, t, sel));
+  const s = [[tr('s1'), tr('s1s', fmtH(hours(t))), true]];
+  if (o.id === '2h') s.push([tr('sPrepStore'), tr('storeName', esc(o.store.name))], [tr('sCourier'), tr('sSms')], [tr('sDel'), w]);
+  else if (o.id === 'cc') {
+    const x = o.stores.find(y => y.s.id === sel.storeId) || o.pick;
+    s.push(x.transfer ? [tr('sToStore'), tr('sFromWh')] : [tr('sPrepStore'), tr('storeName', esc(x.s.name))]);
+    s.push([tr('sReady'), tr('sReadyS', w)], [tr('sCollect'), tr('sCollectS')]);
+  } else s.push([tr('sPrep'), tr('sPrepS', (o.parcels || []).map(g => esc(srcLabel(g.src))).join(tr('and')))], [tr('sShip'), tr('sShipS')], [tr('sDel'), w]);
+  return s;
+}
+const titleOf = o => tr({ '2h': 't2h', cc: 'tcc', express: 'texpress', home: 'thome', relay: 'trelay' }[o.id]);
 function confirmHtml() {
-  const o = S.order;
-  if (!o) return '<main class="conf"><p>Aucune commande en cours.</p><button class="btn-primary w-auto" data-act="restart">Retour à l’article</button></main>';
-  const k = o.mode === 'cc' ? 'Retrait en magasin' : o.mode === 'relay' ? 'Livraison en point relais' : o.title;
+  const ord = S.order;
+  if (!ord) return '<main class="conf"><p>' + tr('noOrder') + '</p><button class="btn-primary w-auto" data-act="restart">' + tr('backItem') + '</button></main>';
   return '<main class="conf"><div class="conf-ok">' + ic('check') + '</div>' +
-    '<h1>Merci ' + esc(o.firstName) + ', votre commande est confirmée</h1>' +
-    '<p class="conf-lead">Commande n° ' + esc(o.no) + '. Un e-mail de confirmation a été envoyé à ' + esc(o.email) + '.</p>' +
-    '<section class="conf-card" aria-label="Livraison"><p class="conf-k">' + esc(k) + '</p><p class="conf-when">' + esc(o.whenTxt) + '</p><p class="conf-place">' + esc(o.place) + '</p>' +
-      '<ol class="tl">' + o.steps.map(s => '<li' + (s[2] ? ' class="done"' : '') + '><span class="tl-t">' + esc(s[0]) + '</span><span class="tl-s">' + esc(s[1]) + '</span></li>').join('') + '</ol></section>' +
-    '<section class="conf-card" aria-label="Articles"><div class="co-items" style="margin:0">' + o.items.map(l => '<div class="item">' + imgHtml('sm') + '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">Taille ' + esc(l.size) + ', quantité ' + l.qty + '</p></div><p class="item-price">' + eur(l.qty * price()) + '</p></div>').join('') + '</div>' +
-      '<div class="conf-tot"><span>Total payé</span><span>' + eur(o.total) + '</span></div></section>' +
-    '<button class="btn-primary w-auto" data-act="restart">Continuer mes achats</button></main>';
+    '<h1>' + tr('thanks', esc(ord.form.firstName.trim())) + '</h1>' +
+    '<p class="conf-lead">' + tr('orderLead', esc(ord.no), esc(ord.form.email.trim())) + '</p>' +
+    '<section class="conf-card" aria-label="' + tr('delivAria') + '"><p class="conf-k">' + titleOf(ord.o) + '</p><p class="conf-when">' + esc(whenOf(ord.o, ord.t, ord.sel)) + '</p><p class="conf-place">' + esc(placeOf(ord.o, ord.sel, ord.form)) + '</p>' +
+      '<ol class="tl">' + stepsOf(ord).map(s => '<li' + (s[2] ? ' class="done"' : '') + '><span class="tl-t">' + s[0] + '</span><span class="tl-s">' + s[1] + '</span></li>').join('') + '</ol></section>' +
+    '<section class="conf-card" aria-label="' + tr('itemsAria') + '"><div class="co-items" style="margin:0">' + ord.items.map(l => '<div class="item">' + imgHtml('sm') + '<div><p class="item-name">' + ed('product.name') + '</p><p class="item-meta">' + tr('sizeQty', esc(l.size), l.qty) + '</p></div><p class="item-price">' + eur(l.qty * price()) + '</p></div>').join('') + '</div>' +
+      '<div class="conf-tot"><span>' + tr('totalPaid') + '</span><span>' + eur(ord.total) + '</span></div></section>' +
+    '<button class="btn-primary w-auto" data-act="restart">' + tr('keepShopping') + '</button></main>';
 }
 
 /* ---------- Outils de démo (horloge, édition) ---------- */
 function chromeHtml() {
   let h = '';
   if (!S.editing) {
-    const nextLbl = customTime ? 'Démo 10:00' : (PRESETS[(clockIdx + 1) % PRESETS.length] === 'now' ? 'l’heure réelle' : PRESETS[(clockIdx + 1) % PRESETS.length]);
-    h += '<button class="clock" id="clock" data-act="clock" title="Heure simulée pour la démonstration. Cliquer pour passer à ' + esc(nextLbl) + '." aria-label="' + esc(clockLabel()) + '. Cliquer pour changer l’heure de démonstration.">' + ic('clock') + '<span>' + esc(clockLabel()) + '</span></button>';
+    const nx = customTime ? '10:00' : PRESETS[(clockIdx + 1) % PRESETS.length];
+    const nextLbl = nx === 'now' ? tr('realTimeNext') : nx;
+    h += '<button class="clock" id="clock" data-act="clock" title="' + esc(tr('clockTip', nextLbl)) + '" aria-label="' + esc(tr('clockAria', clockLabel())) + '">' + ic('clock') + '<span>' + esc(clockLabel()) + '</span></button>';
   }
   if (EDIT.can) {
-    if (!S.editing) h += '<button class="edit-fab" id="edit-on" data-act="edit-on">' + ic('pencil') + 'Modifier la page</button>';
+    if (!S.editing) h += '<button class="edit-fab" id="edit-on" data-act="edit-on">' + ic('pencil') + tr('editPage') + '</button>';
     else {
       const dirty = JSON.stringify(cfg) !== saved;
-      h += '<div class="edit-bar" role="region" aria-label="Mode édition"><p><strong>Mode édition.</strong> Cliquez sur un texte encadré pour le modifier, sur toutes les pages du parcours' + (EDIT.assets ? ', et sur la photo pour la changer' : '') + '.</p>' +
-        '<div class="edit-acts"><button class="btn-ghost btn-sm" data-act="edit-cancel">Annuler</button><button class="btn-primary btn-sm" id="edit-save" data-act="edit-save"' + (!dirty || S.saving ? ' disabled' : '') + '>' + (S.saving ? 'Enregistrement…' : 'Enregistrer') + '</button></div>' +
-        (S.editMsg ? '<p class="edit-msg" role="status">' + esc(S.editMsg) + '</p>' : '') +
+      h += '<div class="edit-bar" role="region" aria-label="' + tr('editRegion') + '"><p><strong>' + tr('editMode') + '</strong>' + tr('editHelp', !!EDIT.assets) + '</p>' +
+        '<div class="edit-acts"><button class="btn-ghost btn-sm" data-act="edit-cancel">' + tr('cancel') + '</button><button class="btn-primary btn-sm" id="edit-save" data-act="edit-save"' + (!dirty || S.saving ? ' disabled' : '') + '>' + (S.saving ? tr('saving') : tr('save')) + '</button></div>' +
+        (S.editMsg ? '<p class="edit-msg" role="status">' + tr(S.editMsg) + '</p>' : '') +
         (EDIT.assets ? '<input type="file" id="file-in" accept="image/jpeg,image/png,image/webp" hidden>' : '') + '</div>';
     }
   }
-  if (S.toast) h += '<div class="toast" role="status">' + esc(S.toast) + '</div>';
+  if (S.toast) h += '<div class="toast" role="status">' + tr(S.toast) + '</div>';
   return h;
 }
 function updateSaveBtn() { const b = document.getElementById('edit-save'); if (b) b.disabled = S.saving || JSON.stringify(cfg) === saved; }
 let toastTimer = null;
-function toast(msg) { S.toast = msg; renderChrome(); clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = ''; renderChrome(); }, 4000); }
+function toast(key) { S.toast = key; renderChrome(); clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = ''; renderChrome(); }, 4000); }
 
 async function initCaps() {
   if (!window.claude || typeof window.claude.use !== 'function') return;
@@ -1167,30 +1358,30 @@ async function save() {
   S.saving = true; S.editMsg = ''; renderChrome();
   try {
     await EDIT.artifact.publish(buildDoc(cfg));
-    S.editMsg = 'Enregistré. La page se recharge.';
+    S.editMsg = 'mSaved';
   } catch (e) {
     const c = e && e.code;
-    if (c === 'conflict') S.editMsg = 'Une version plus récente vient d’être publiée : la page se recharge.';
+    if (c === 'conflict') S.editMsg = 'mConflict';
     else if (['not_writer', 'not_granted', 'not_declared', 'consent_required', 'capability_disabled', 'capability_removed'].includes(c)) {
-      EDIT.can = false; S.editing = false; cfg = JSON.parse(saved); S.saving = false; render(); toast('Cette page est en lecture seule pour vous.'); return;
+      EDIT.can = false; S.editing = false; cfg = JSON.parse(saved); S.saving = false; render(); toast('mReadOnly'); return;
     }
-    else if (c === 'too_large') S.editMsg = 'La page est trop lourde pour être enregistrée.';
-    else if (c === 'rate_limited') S.editMsg = 'Trop d’enregistrements rapprochés. Réessayez dans un instant.';
-    else S.editMsg = 'L’enregistrement a échoué. Réessayez.';
+    else if (c === 'too_large') S.editMsg = 'mTooLarge';
+    else if (c === 'rate_limited') S.editMsg = 'mRate';
+    else S.editMsg = 'mFail';
   }
   S.saving = false; renderChrome();
 }
 async function uploadImage(file) {
   if (!EDIT.assets || !file) return;
-  S.editMsg = 'Envoi de la photo…'; renderChrome();
+  S.editMsg = 'mUploading'; renderChrome();
   try {
     const r = await EDIT.assets.upload(file);
     cfg.product.image = '/_blob/' + r.id;
-    S.editMsg = 'Photo remplacée. Pensez à enregistrer.';
+    S.editMsg = 'mPhotoOk';
     render();
   } catch (e) {
     const c = e && e.code;
-    S.editMsg = c === 'too_large' ? 'Photo trop lourde (20 Mo maximum).' : c === 'unsupported_type' ? 'Format non pris en charge : utilisez JPG, PNG ou WebP.' : 'L’envoi de la photo a échoué.';
+    S.editMsg = c === 'too_large' ? 'mPhotoBig' : c === 'unsupported_type' ? 'mPhotoType' : 'mPhotoFail';
     renderChrome();
   }
 }
@@ -1203,9 +1394,10 @@ function postRender(root) {
   root.querySelectorAll('img[data-pimg]').forEach(img => { if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) markBroken(img); });
 }
 function markBroken(img) { const s = img.getAttribute('src'); if (s) broken.add(s); img.remove(); }
-function setTitle() { document.title = (cfg.product.name || 'Article') + ' | ' + (cfg.site.logo || 'Boutique'); }
+function setTitle() { document.title = (txt('product.name') || tr('item')) + ' | ' + (cfg.site.logo || ''); }
 function renderPage() {
   const fid = activeId();
+  document.documentElement.lang = LANG;
   document.body.classList.toggle('is-editing', S.editing);
   let h;
   if (S.view === 'checkout') h = checkoutHtml();
@@ -1224,6 +1416,12 @@ function go(view) {
   window.scrollTo(0, 0);
 }
 function focusSoon(sel) { setTimeout(() => { const el = document.querySelector(sel); if (el) el.focus(); }, 0); }
+function setLang(v) {
+  if (v !== 'fr' && v !== 'en') return;
+  LANG = v;
+  try { sessionStorage.setItem(LANG_KEY, v); } catch (e) { /* non mémorisé */ }
+  render();
+}
 
 /* ---------- Actions ---------- */
 function addToCart() {
@@ -1234,16 +1432,13 @@ function addToCart() {
   render();
   focusSoon('#dr-close');
 }
-function restart() { S.cart = []; S.cp = ''; S.cpDraft = ''; S.cpEdit = false; S.cpErr = ''; S.co = null; S.order = null; S.size = (cfg.sizes || []).includes('M') ? 'M' : cfg.sizes[0]; go('pdp'); }
+function restart() { S.cart = []; S.cp = ''; S.cpDraft = ''; S.cpEdit = false; S.cpErr = false; S.co = null; S.order = null; S.size = (cfg.sizes || []).includes('M') ? 'M' : cfg.sizes[0]; go('pdp'); }
 function submitCp(form) {
   const input = form.querySelector('input');
   const v = (input.value || '').replace(/\s/g, '');
   const ctx = form.dataset.ctx;
-  if (!validCp(v)) {
-    S.cpDraft = input.value; S.cpErr = 'Saisissez un code postal français à 5 chiffres, par exemple 75015.';
-    renderPage(); focusSoon('#cp-in-' + ctx); return;
-  }
-  S.cp = v; S.cpDraft = v; S.cpEdit = false; S.cpErr = '';
+  if (!validCp(v)) { S.cpDraft = input.value; S.cpErr = true; renderPage(); focusSoon('#cp-in-' + ctx); return; }
+  S.cp = v; S.cpDraft = v; S.cpEdit = false; S.cpErr = false;
   if (S.co) { S.co.form.cp = v; if (S.co.autoCity || !S.co.form.city) S.co.form.city = cityOf(v); }
   renderPage(); focusSoon('#cp-edit-' + ctx);
 }
@@ -1253,13 +1448,13 @@ document.addEventListener('click', e => {
   if (S.editing && e.target.closest('[data-edit]')) { e.preventDefault(); return; }
   const el = e.target.closest('[data-act]');
   if (!el) return;
-  const act = el.dataset.act;
-  switch (act) {
+  switch (el.dataset.act) {
     case 'home': go('pdp'); break;
+    case 'lang': setLang(el.dataset.v); break;
     case 'menu': S.menu = !S.menu; renderPage(); break;
     case 'size': S.size = el.dataset.v; renderPage(); break;
     case 'add': addToCart(); break;
-    case 'cp-edit': S.cpEdit = true; S.cpDraft = S.cp; S.cpErr = ''; renderPage(); focusSoon('#cp-in-' + el.dataset.ctx); break;
+    case 'cp-edit': S.cpEdit = true; S.cpDraft = S.cp; S.cpErr = false; renderPage(); focusSoon('#cp-in-' + el.dataset.ctx); break;
     case 'close-drawer': S.drawer = false; renderChrome(); focusSoon('#add-btn'); break;
     case 'go-cart': go('cart'); break;
     case 'qty': { const l = S.cart[+el.dataset.i]; if (l) { l.qty = Math.max(1, Math.min(qtyMax(l.size), l.qty + (+el.dataset.d))); render(); } break; }
@@ -1294,7 +1489,7 @@ document.addEventListener('input', e => {
     }
     setPath(cfg, path, v);
     document.querySelectorAll('[data-edit="' + path + '"]').forEach(o => { if (o !== t) o.textContent = t.dataset.num ? fmtNum(v) : v; });
-    if (path === 'product.name' || path === 'site.logo') setTitle();
+    if (/product\.name$|site\.logo$/.test(path)) setTitle();
     updateSaveBtn();
     return;
   }
@@ -1350,8 +1545,8 @@ document.addEventListener('paste', e => {
   const t = e.target.closest && e.target.closest('[data-edit]');
   if (!t) return;
   e.preventDefault();
-  const txt = ((e.clipboardData || window.clipboardData).getData('text/plain') || '').replace(/\s+/g, ' ');
-  document.execCommand('insertText', false, txt);
+  const s = ((e.clipboardData || window.clipboardData).getData('text/plain') || '').replace(/\s+/g, ' ');
+  document.execCommand('insertText', false, s);
 });
 document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.acc) S.acc[d.dataset.acc] = d.open; }, true);
 document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.hasAttribute('data-pimg')) markBroken(t); }, true);
